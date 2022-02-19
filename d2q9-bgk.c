@@ -292,7 +292,7 @@ int rebound(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obsta
   return EXIT_SUCCESS;
 }
 
-#pragma omp simd
+#pragma omp declare simd uniform(w, c_sq, local_density, u_sq, a, b, u) linear(i:1)
 float calculate_axis_speeds(float const w, float const c_sq, float local_density, float u_sq, float a, float b, float *u, int i) {
   float speed;
 
@@ -301,7 +301,7 @@ float calculate_axis_speeds(float const w, float const c_sq, float local_density
   return speed;
 }
 
-#pragma omp simd
+#pragma omp declare simd uniform(w, c_sq, local_density, u_sq, a, b, u) linear(i:1)
 float calculate_diag_speeds(float const w, float const c_sq, float local_density, float u_sq, float a, float b, float *u, int i) {
   float speed;
 
@@ -321,6 +321,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
   ** NB the collision step is called after
   ** the propagate step and so values of interest
   ** are in the scratch-space grid */
+  #pragma omp parallel for collapse(2)
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
@@ -331,6 +332,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
         /* compute local density total */
         float local_density = 0.f;
 
+        #pragma omp simd reduction(+:local_density)
         for (int kk = 0; kk < NSPEEDS; kk++)
         {
           local_density += tmp_cells[ii + jj*params.nx].speeds[kk];
@@ -376,6 +378,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
         d_equ[0] = w0 * local_density
                    * (1.f - u_sq / (2.f * c_sq));
 
+        #pragma omp simd
         for (int i = 1; i < 9; i++) {
           /* axis speeds: weight w1 */
           /* diagonal speeds: weight w2 */
@@ -384,6 +387,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
         } 
 
         /* relaxation step */
+        #pragma omp simd
         for (int kk = 0; kk < NSPEEDS; kk++)
         {
           cells[ii + jj*params.nx].speeds[kk] = tmp_cells[ii + jj*params.nx].speeds[kk]
