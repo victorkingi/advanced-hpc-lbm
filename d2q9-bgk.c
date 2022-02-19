@@ -292,7 +292,6 @@ int rebound(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obsta
   return EXIT_SUCCESS;
 }
 
-#pragma omp declare simd uniform(w, c_sq, local_density, u_sq, a, b, u)
 float calculate_axis_speeds(float const w, float const c_sq, float local_density, float u_sq, float a, float b, float *u, int i) {
   float speed;
 
@@ -301,7 +300,6 @@ float calculate_axis_speeds(float const w, float const c_sq, float local_density
   return speed;
 }
 
-#pragma omp declare simd uniform(w, c_sq, local_density, u_sq, a, b, u) linear(i:1)
 float calculate_diag_speeds(float const w, float const c_sq, float local_density, float u_sq, float a, float b, float *u, int i) {
   float speed;
 
