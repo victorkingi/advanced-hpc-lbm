@@ -292,8 +292,8 @@ int rebound(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obsta
   return EXIT_SUCCESS;
 }
 
-#pragma omp declare simd uniform(w, c_sq, local_density, u_sq, a, b, u) linear(i:1)
-float calculate_axis_speeds(float const w, float const c_sq, float local_density, float u_sq, float a, float b, float *u, int i) {
+#pragma omp declare simd uniform(c_sq, local_density, u_sq, a, b, u) linear(i:1)
+float calculate_speeds(float const w, float const c_sq, float local_density, float u_sq, float a, float b, float *u, int i) {
   float speed;
 
   speed = w * local_density * (a + u[i] / c_sq + (u[i] * u[i]) / (b * c_sq * c_sq) - u_sq / (b * c_sq));
@@ -301,14 +301,21 @@ float calculate_axis_speeds(float const w, float const c_sq, float local_density
   return speed;
 }
 
-#pragma omp declare simd uniform(w, c_sq, local_density, u_sq, a, b, u) linear(i:1)
-float calculate_diag_speeds(float const w, float const c_sq, float local_density, float u_sq, float a, float b, float *u, int i) {
-  float speed;
+#pragma omp declare simd uniform(local_density, nx) linear(jj:1)
+float compute_velocity_component(int ii, int jj, t_speed *tmp_cells, float local_density, int nx, int a, int b, int c, int d, int e) {
+  float comp;
 
-  speed = w * local_density * (a + u[i] / c_sq + (u[i] * u[i]) / (b * c_sq * c_sq) - u_sq / (b * c_sq));
+  comp = (tmp_cells[ii + jj*nx].speeds[a]
+                      + tmp_cells[ii + jj*nx].speeds[5]
+                      + tmp_cells[ii + jj*nx].speeds[b]
+                      - (tmp_cells[ii + jj*nx].speeds[c]
+                         + tmp_cells[ii + jj*nx].speeds[d]
+                         + tmp_cells[ii + jj*nx].speeds[e]))
+                     / local_density;
 
-  return speed;
+  return comp;
 }
+
 
 int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obstacles)
 {
@@ -317,10 +324,14 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
   const float w1 = 1.f / 9.f;  /* weighting factor */
   const float w2 = 1.f / 36.f; /* weighting factor */
 
+  float const a = 1.f;
+  float const b = 2.f;
+
   /* loop over the cells in the grid
   ** NB the collision step is called after
   ** the propagate step and so values of interest
   ** are in the scratch-space grid */
+  #pragma omp parallel for schedule(static) collapse(2)
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
@@ -331,29 +342,16 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
         /* compute local density total */
         float local_density = 0.f;
 
-        #pragma omp simd reduction(+:local_density)
         for (int kk = 0; kk < NSPEEDS; kk++)
         {
           local_density += tmp_cells[ii + jj*params.nx].speeds[kk];
         }
 
         /* compute x velocity component */
-        float u_x = (tmp_cells[ii + jj*params.nx].speeds[1]
-                      + tmp_cells[ii + jj*params.nx].speeds[5]
-                      + tmp_cells[ii + jj*params.nx].speeds[8]
-                      - (tmp_cells[ii + jj*params.nx].speeds[3]
-                         + tmp_cells[ii + jj*params.nx].speeds[6]
-                         + tmp_cells[ii + jj*params.nx].speeds[7]))
-                     / local_density;
+        float u_x = compute_velocity_component(ii, jj, tmp_cells, local_density, params.nx, 1, 8, 3, 6, 7);             
         /* compute y velocity component */
-        float u_y = (tmp_cells[ii + jj*params.nx].speeds[2]
-                      + tmp_cells[ii + jj*params.nx].speeds[5]
-                      + tmp_cells[ii + jj*params.nx].speeds[6]
-                      - (tmp_cells[ii + jj*params.nx].speeds[4]
-                         + tmp_cells[ii + jj*params.nx].speeds[7]
-                         + tmp_cells[ii + jj*params.nx].speeds[8]))
-                     / local_density;
-
+        float u_y = compute_velocity_component(ii, jj, tmp_cells, local_density, params.nx, 2, 6, 4, 7, 8);             
+      
         /* velocity squared */
         float u_sq = u_x * u_x + u_y * u_y;
 
@@ -370,23 +368,18 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
 
         /* equilibrium densities */
         float d_equ[NSPEEDS];
-
-        float const a = 1.f;
-        float const b = 2.f;
         /* zero velocity density: weight w0 */
         d_equ[0] = w0 * local_density
                    * (1.f - u_sq / (2.f * c_sq));
 
-        #pragma omp simd
         for (int i = 1; i < 9; i++) {
           /* axis speeds: weight w1 */
           /* diagonal speeds: weight w2 */
-          if (i < 5) d_equ[i] = calculate_axis_speeds(w1, c_sq, local_density, u_sq, a, b, u, i);
-          else d_equ[i] = calculate_diag_speeds(w2, c_sq, local_density, u_sq, a, b, u, i);
+          if (i < 5) d_equ[i] = calculate_speeds(w1, c_sq, local_density, u_sq, a, b, u, i);
+          else d_equ[i] = calculate_speeds(w2, c_sq, local_density, u_sq, a, b, u, i);
         } 
 
         /* relaxation step */
-        #pragma omp simd
         for (int kk = 0; kk < NSPEEDS; kk++)
         {
           cells[ii + jj*params.nx].speeds[kk] = tmp_cells[ii + jj*params.nx].speeds[kk]
