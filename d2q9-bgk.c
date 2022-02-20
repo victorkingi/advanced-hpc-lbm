@@ -236,10 +236,9 @@ int accelerate_flow(const t_param params, t_speed* cells, int* obstacles)
 int propagate(const t_param params, t_speed* cells, t_speed* tmp_cells)
 {
   /* loop over _all_ cells */
-  for (int jj = 0; jj < params.ny; jj++)
-  {
-    for (int ii = 0; ii < params.nx; ii++)
-    {
+ // #pragma omp parallel for collapse(2)
+  for (int jj = 0; jj < params.ny; jj++) {
+    for (int ii = 0; ii < params.nx; ii++) {
       /* determine indices of axis-direction neighbours
       ** respecting periodic boundary conditions (wrap around) */
       int y_n = (jj + 1) % params.ny;
@@ -292,6 +291,7 @@ int rebound(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obsta
   return EXIT_SUCCESS;
 }
 
+#pragma omp declare simd uniform(c_sq, local_density, u_sq, a, b, u) linear(i:1)
 float calculate_speeds(float const w, float const c_sq, float local_density, float u_sq, float a, float b, float *u, int i) {
   float speed;
 
@@ -300,6 +300,7 @@ float calculate_speeds(float const w, float const c_sq, float local_density, flo
   return speed;
 }
 
+#pragma omp declare simd uniform(local_density, nx) linear(jj:1)
 float compute_velocity_component(int ii, int jj, t_speed *tmp_cells, float local_density, int nx, int a, int b, int c, int d, int e) {
   float comp;
 
@@ -329,7 +330,7 @@ int collision(const t_param params, t_speed* cells, t_speed* tmp_cells, int* obs
   ** NB the collision step is called after
   ** the propagate step and so values of interest
   ** are in the scratch-space grid */
-  #pragma omp parallel for schedule(static) collapse(2)
+  #pragma omp parallel for collapse(2)
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
@@ -400,10 +401,8 @@ float av_velocity(const t_param params, t_speed* cells, int* obstacles)
   tot_u = 0.f;
 
   /* loop over all non-blocked cells */
-  for (int jj = 0; jj < params.ny; jj++)
-  {
-    for (int ii = 0; ii < params.nx; ii++)
-    {
+  for (int jj = 0; jj < params.ny; jj++) {
+    for (int ii = 0; ii < params.nx; ii++) {
       /* ignore occupied cells */
       if (!obstacles[ii + jj*params.nx])
       {
@@ -416,22 +415,11 @@ float av_velocity(const t_param params, t_speed* cells, int* obstacles)
         }
 
         /* x-component of velocity */
-        float u_x = (cells[ii + jj*params.nx].speeds[1]
-                      + cells[ii + jj*params.nx].speeds[5]
-                      + cells[ii + jj*params.nx].speeds[8]
-                      - (cells[ii + jj*params.nx].speeds[3]
-                         + cells[ii + jj*params.nx].speeds[6]
-                         + cells[ii + jj*params.nx].speeds[7]))
-                     / local_density;
+        float u_x = compute_velocity_component(ii, jj, cells, local_density, params.nx, 1, 8, 3, 6, 7);
         /* compute y velocity component */
-        float u_y = (cells[ii + jj*params.nx].speeds[2]
-                      + cells[ii + jj*params.nx].speeds[5]
-                      + cells[ii + jj*params.nx].speeds[6]
-                      - (cells[ii + jj*params.nx].speeds[4]
-                         + cells[ii + jj*params.nx].speeds[7]
-                         + cells[ii + jj*params.nx].speeds[8]))
-                     / local_density;
+        float u_y = compute_velocity_component(ii, jj, cells, local_density, params.nx, 2, 6, 4, 7, 8);
         /* accumulate the norm of x- and y- velocity components */
+        //#pragma omp barrier
         tot_u += sqrtf((u_x * u_x) + (u_y * u_y));
         /* increase counter of inspected cells */
         ++tot_cells;
