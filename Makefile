@@ -2,9 +2,8 @@
 
 EXE=d2q9-bgk
 
-CC=gcc
-CFLAGS= -std=c99 -Wall -O3
-LIBS = -lm
+CC=icc
+CFLAGS= -xHOST -O3 -fast
 
 FINAL_STATE_FILE=./final_state.dat
 AV_VELS_FILE=./av_vels.dat

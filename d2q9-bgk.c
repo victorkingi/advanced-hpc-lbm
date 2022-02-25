@@ -516,6 +516,7 @@ int initialise(const char* paramfile, const char* obstaclefile,
 
   /* main grid */
   *cells_ptr = (t_speed*)malloc(sizeof(t_speed) * (params->ny * params->nx));
+  8fttZljzntC7S6WLwtooJAx2xMkVi6X83
 
   if (*cells_ptr == NULL) die("cannot allocate memory for cells", __LINE__, __FILE__);
 
