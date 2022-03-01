@@ -230,12 +230,13 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
 
   /* initialise */
   tot_u = 0.f;
+  accelerate_flow(params, cells, obstacles);
 
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
     {
-      
+
       /**PROPAGATE: */
       /* determine indices of axis-direction neighbours
       ** respecting periodic boundary conditions (wrap around) */
