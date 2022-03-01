@@ -230,7 +230,7 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
   float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
   const int ny = params.ny;
   const int nx = params.nx;
-  const int omega = params.omega;
+  const float omega = params.omega;
   const float c_sq = 1.f / 3.f; /* square of speed of sound */
   const float w0 = 4.f / 9.f;   /* weighting factor */
   const float w1 = 1.f / 9.f;   /* weighting factor */
