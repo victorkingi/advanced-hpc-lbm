@@ -231,32 +231,11 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
   /* initialise */
   tot_u = 0.f;
 
-  /* compute weighting factors */
-  float w1_ = params.density * params.accel / 9.f;
-  float w2_ = params.density * params.accel / 36.f;
-
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
     {
-      /* if the cell is not occupied and
-      ** we don't send a negative density */
-      if (jj == params.ny-2 && !obstacles[ii + jj * params.nx] 
-      && (cells[ii + jj * params.nx].speeds[3] - w1_) > 0.f 
-      && (cells[ii + jj * params.nx].speeds[6] - w2_) > 0.f 
-      && (cells[ii + jj * params.nx].speeds[7] - w2_) > 0.f)
-      {
-        /* increase 'east-side' densities */
-        cells[ii + jj * params.nx].speeds[1] += w1_;
-        cells[ii + jj * params.nx].speeds[5] += w2_;
-        cells[ii + jj * params.nx].speeds[8] += w2_;
-        /* decrease 'west-side' densities */
-        cells[ii + jj * params.nx].speeds[3] -= w1_;
-        cells[ii + jj * params.nx].speeds[6] -= w2_;
-        cells[ii + jj * params.nx].speeds[7] -= w2_;
-      }
-
-      /************************************* */
+      
       /**PROPAGATE: */
       /* determine indices of axis-direction neighbours
       ** respecting periodic boundary conditions (wrap around) */
