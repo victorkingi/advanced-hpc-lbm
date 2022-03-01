@@ -156,6 +156,7 @@ int main(int argc, char *argv[])
   init_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   comp_tic = init_toc;
 
+  accelerate_flow(params, cells, obstacles);
   for (int tt = 0; tt < params.maxIters; tt++)
   {
     av_vels[tt] = timestep(params, cells, tmp_cells, obstacles);
@@ -230,7 +231,6 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
 
   /* initialise */
   tot_u = 0.f;
-  accelerate_flow(params, cells, obstacles);
 
   for (int jj = 0; jj < params.ny; jj++)
   {
@@ -365,6 +365,28 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
         /* increase counter of inspected cells */
         ++tot_cells;
 
+        /* compute weighting factors */
+        float w1_ = params.density * params.accel / 9.f;
+        float w2_ = params.density * params.accel / 36.f;
+
+        /* if the cell is not occupied and
+        ** we don't send a negative density */
+        if (jj == params.ny-2 
+        && !obstacles[ii + jj * params.nx] 
+        && (speed_3 - w1_) > 0.f 
+        && (speed_6 - w2_) > 0.f 
+        && (speed_7 - w2_) > 0.f)
+        {
+          /* increase 'east-side' densities */
+          speed_1 += w1_;
+          speed_5 += w2_;
+          speed_8 += w2_;
+          /* decrease 'west-side' densities */
+          speed_3 -= w1_;
+          speed_6 -= w2_;
+          speed_7 -= w2_;
+        }
+
         /* write back new state from speed variables to tmp_cells ready for next iteration */
         tmp_cells[ii + jj*params.nx].speeds[0] = speed_0;
         tmp_cells[ii + jj*params.nx].speeds[1] = speed_1;
@@ -375,9 +397,11 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
         tmp_cells[ii + jj*params.nx].speeds[6] = speed_6;
         tmp_cells[ii + jj*params.nx].speeds[7] = speed_7;
         tmp_cells[ii + jj*params.nx].speeds[8] = speed_8;
+
       }
     }
   }
+
 
   return tot_u / (float)tot_cells;
 }
