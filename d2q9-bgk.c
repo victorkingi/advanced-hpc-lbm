@@ -78,7 +78,6 @@ typedef struct
   float speeds[NSPEEDS];
 } t_speed;
 
-
 /*
 ** function prototypes
 */
@@ -112,6 +111,7 @@ float calc_reynolds(const t_param params, t_speed *cells, int *obstacles);
 /* utility functions */
 void die(const char *message, const int line, const char *file);
 void usage(const char *exe);
+
 
 /*
 ** main program:
@@ -271,6 +271,11 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
   register unsigned int jj;
   register unsigned int ii;
   register unsigned int mul_val;
+  float half_eq_u_x = 0.f;
+  float half_eq_u_y = 0.f;
+  float ld = 0.f;
+  float value_u_x = 0.f;
+  float value_u_y = 0.f;
 
   for (jj = 0; jj < params.ny; jj++)
   {
@@ -316,16 +321,32 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
         register float local_density = speed_0 + speed_1 + speed_2 + speed_3 + speed_4 + speed_5 + speed_6 + speed_7 + speed_8;
 
         /* compute x velocity component */
-        register float u_x = (speed_1 + speed_5 + speed_8 - (speed_3 + speed_6 + speed_7)) / local_density;
-        /* compute y velocity component */
-        register float u_y = (speed_2 + speed_5 + speed_6 - (speed_4 + speed_7 + speed_8)) / local_density;
+        register float u_x = speed_1 + speed_5 + speed_8 - (speed_3 + speed_6 + speed_7);
+        if (u_x == half_eq_u_x && local_density == ld) {
+          u_x = value_u_x;
 
+        } else {
+          half_eq_u_x = u_x;
+          ld = local_density;
+          u_x = u_x / local_density;
+        }
+
+        /* compute y velocity component */
+        register float u_y = speed_2 + speed_5 + speed_6 - (speed_4 + speed_7 + speed_8);
+        if (u_y == half_eq_u_y && local_density == ld) {
+          u_y = value_u_y;
+        } else {
+          half_eq_u_y = u_y;
+          ld = local_density;
+          u_y = u_y / local_density;
+        }
+        
         /* velocity squared */
         float u_sq = u_x * u_x + u_y * u_y;
 
         /* zero velocity density: weight w0 */
         register float d_equ = w0 * local_density
-                    * (1.f - u_sq / (2.f * c_sq));
+                    * (1.f - u_sq / (2.f * c_sq)); // y = ab * ((1+c)/d + (c^2) / (2c^2) - d/(2c) );
         speed_0 = speed_0 + params.omega * (d_equ - speed_0);   
 
         /* axis speeds: weight w1 */
