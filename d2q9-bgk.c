@@ -122,6 +122,20 @@ float calc_reynolds(const t_param params, t_speed *cells, int *obstacles);
 void die(const char *message, const int line, const char *file);
 void usage(const char *exe);
 
+/* global variable */
+unsigned int is_power_of_2;
+
+unsigned int check_power_of_2(unsigned int x) {
+  unsigned int pow = 0;
+  unsigned int result = x;
+  while (result != 1)
+  {
+    result = result >> 1;
+    if ((result+1) & 1) return 0; 
+    pow++;
+  }
+  return 1;
+}
 
 /*
 ** main program:
@@ -162,6 +176,7 @@ int main(int argc, char *argv[])
   comp_tic = init_toc;
 
   accelerate_flow(params, cells, obstacles);
+  is_power_of_2 = check_power_of_2(params.nx);
   for (int tt = 0; tt < params.maxIters; tt++)
   {
     av_vels[tt] = timestep(params, cells, tmp_cells, obstacles);
@@ -232,8 +247,8 @@ int accelerate_flow(const t_param params, t_speed *cells, int *obstacles)
   return EXIT_SUCCESS;
 }
 
-int bitwise_mul_int(unsigned int y, unsigned int x, unsigned int is_2) {
-  if (!is_2) return y*x;
+int bitwise_mul_int(unsigned int y, unsigned int x) {
+  if (!is_power_of_2) return y*x;
   unsigned int pow = 0;
   unsigned int result = x;
   while (result != 1)
@@ -244,8 +259,8 @@ int bitwise_mul_int(unsigned int y, unsigned int x, unsigned int is_2) {
   return y << pow;
 }
 
-int bitwise_mod_int(unsigned int y, unsigned int x, unsigned int is_2) {
-  if (!is_2) return y % x;
+int bitwise_mod_int(unsigned int y, unsigned int x) {
+  if (!is_power_of_2) return y % x;
   unsigned int pow = 0;
   unsigned int result = x;
   while (result != 1)
@@ -256,21 +271,8 @@ int bitwise_mod_int(unsigned int y, unsigned int x, unsigned int is_2) {
   return y & (x - 1);
 }
 
-unsigned int check_power_of_2(unsigned int x) {
-  unsigned int pow = 0;
-  unsigned int result = x;
-  while (result != 1)
-  {
-    result = result >> 1;
-    if ((result+1) & 1) return 0; 
-    pow++;
-  }
-  return 1;
-}
-
 float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obstacles)
 {
-  register unsigned int is_power_of_2 = check_power_of_2(params.nx);
   register unsigned int tot_cells = 0; /* no. of cells used in calculation */
   register float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
   const float c_sq = 1.f / 3.f; /* square of speed of sound */
@@ -283,11 +285,10 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
   float w2_ = params.density * params.accel / 36.f;
   register unsigned int jj;
   register unsigned int ii;
-  register unsigned int mul_val;
 
   for (jj = 0; jj < params.ny; jj++)
   {
-    mul_val = bitwise_mul_int(jj, params.nx, is_power_of_2); 
+    register unsigned int mul_val = bitwise_mul_int(jj, params.nx); 
     for (ii = 0; ii < params.nx; ii++)
     {
       unsigned int is_obstacle = obstacles[mul_val + ii];
@@ -295,20 +296,20 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
       /**PROPAGATE: */
       /* determine indices of axis-direction neighbours
       ** respecting periodic boundary conditions (wrap around) */
-      unsigned int y_n = bitwise_mod_int(jj + 1, params.ny, is_power_of_2);
-      unsigned int x_e = bitwise_mod_int(ii + 1, params.nx, is_power_of_2);
+      unsigned int y_n = bitwise_mod_int(jj + 1, params.ny);
+      unsigned int x_e = bitwise_mod_int(ii + 1, params.nx);
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
       register float speed_0 = cells->speed_0[ii + mul_val];   /* central cell, no movement */
       register float speed_1 = cells->speed_1[x_w + mul_val];  /* east */
-      register float speed_2 = cells->speed_2[ii + bitwise_mul_int(y_s, params.nx, is_power_of_2)];  /* north */
+      register float speed_2 = cells->speed_2[ii + bitwise_mul_int(y_s, params.nx)];  /* north */
       register float speed_3 = cells->speed_3[x_e + mul_val];  /* west */
-      register float speed_4 = cells->speed_4[ii + bitwise_mul_int(y_n, params.nx, is_power_of_2)];  /* south */
-      register float speed_5 = cells->speed_5[x_w + bitwise_mul_int(y_s, params.nx, is_power_of_2)]; /* north-east */
-      register float speed_6 = cells->speed_6[x_e + bitwise_mul_int(y_s, params.nx, is_power_of_2)]; /* north-west */
-      register float speed_7 = cells->speed_7[x_e + bitwise_mul_int(y_n, params.nx, is_power_of_2)]; /* south-west */
-      register float speed_8 = cells->speed_8[x_w + bitwise_mul_int(y_n, params.nx, is_power_of_2)]; /* south-east */
+      register float speed_4 = cells->speed_4[ii + bitwise_mul_int(y_n, params.nx)];  /* south */
+      register float speed_5 = cells->speed_5[x_w + bitwise_mul_int(y_s, params.nx)]; /* north-east */
+      register float speed_6 = cells->speed_6[x_e + bitwise_mul_int(y_s, params.nx)]; /* north-west */
+      register float speed_7 = cells->speed_7[x_e + bitwise_mul_int(y_n, params.nx)]; /* south-west */
+      register float speed_8 = cells->speed_8[x_w + bitwise_mul_int(y_n, params.nx)]; /* south-east */
 
       /**If cell contains an obstacle rebound else collision occurs */
       if (is_obstacle)
@@ -338,7 +339,7 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
 
         /* zero velocity density: weight w0 */
         register float d_equ = w0 * local_density
-                    * (1.f - u_sq / (2.f * c_sq)); // y = ab * ((1+c)/d + (c^2) / (2c^2) - d/(2c) );
+                    * (1.f - u_sq / (2.f * c_sq));
         speed_0 = speed_0 + params.omega * (d_equ - speed_0);   
 
         /* axis speeds: weight w1 */
@@ -435,10 +436,8 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
 
 float av_velocity(const t_param params, t_speed *cells, int *obstacles)
 {
-  int tot_cells = 0; /* no. of cells used in calculation */
+  unsigned int tot_cells = 0; /* no. of cells used in calculation */
   float tot_u;       /* accumulated magnitudes of velocity for each cell */
-  register unsigned int mul_val;
-  register unsigned int is_power_of_2 = check_power_of_2(params.nx);
 
   /* initialise */
   tot_u = 0.f;
@@ -446,23 +445,23 @@ float av_velocity(const t_param params, t_speed *cells, int *obstacles)
   /* loop over all non-blocked cells */
   for (int jj = 0; jj < params.ny; jj++)
   {
-    mul_val = bitwise_mul_int(jj, params.nx, is_power_of_2); 
+    register unsigned int mul_val = bitwise_mul_int(jj, params.nx); 
     for (int ii = 0; ii < params.nx; ii++)
     {
       /* ignore occupied cells */
       if (!obstacles[ii + jj * params.nx])
       {
-        register float speed_0 = cells->speed_0[ii + mul_val];
-        register float speed_1 = cells->speed_1[ii + mul_val];
-        register float speed_2 = cells->speed_2[ii + mul_val];
-        register float speed_3 = cells->speed_3[ii + mul_val];
-        register float speed_4 = cells->speed_4[ii + mul_val];
-        register float speed_5 = cells->speed_5[ii + mul_val];
-        register float speed_6 = cells->speed_6[ii + mul_val];
-        register float speed_7 = cells->speed_7[ii + mul_val];
-        register float speed_8 = cells->speed_8[ii + mul_val];
+        float speed_0 = cells->speed_0[ii + mul_val];
+        float speed_1 = cells->speed_1[ii + mul_val];
+        float speed_2 = cells->speed_2[ii + mul_val];
+        float speed_3 = cells->speed_3[ii + mul_val];
+        float speed_4 = cells->speed_4[ii + mul_val];
+        float speed_5 = cells->speed_5[ii + mul_val];
+        float speed_6 = cells->speed_6[ii + mul_val];
+        float speed_7 = cells->speed_7[ii + mul_val];
+        float speed_8 = cells->speed_8[ii + mul_val];
         /* local density total */
-        register float local_density = speed_0 + speed_1 + speed_2 + speed_3 + speed_4 + speed_5 + speed_6 + speed_7 + speed_8;
+        float local_density = speed_0 + speed_1 + speed_2 + speed_3 + speed_4 + speed_5 + speed_6 + speed_7 + speed_8;
 
          /* compute x velocity component */
         float u_x = (speed_1 + speed_5 + speed_8 - (speed_3 + speed_6 + speed_7)) / local_density;
@@ -725,7 +724,7 @@ float total_density(const t_param params, t_speed *cells)
   {
     for (int ii = 0; ii < params.nx; ii++)
     {
-      total = cells->speed_0[ii + jj * params.nx] 
+      total += cells->speed_0[ii + jj * params.nx] 
       + cells->speed_1[ii + jj * params.nx] + cells->speed_2[ii + jj * params.nx] 
       + cells->speed_3[ii + jj * params.nx] + cells->speed_4[ii + jj * params.nx] 
       + cells->speed_5[ii + jj * params.nx] + cells->speed_6[ii + jj * params.nx] 
@@ -740,7 +739,6 @@ int write_values(const t_param params, t_speed *cells, int *obstacles, float *av
 {
   FILE *fp;                     /* file pointer */
   const float c_sq = 1.f / 3.f; /* sq. of speed of sound */
-  float local_density;          /* per grid cell sum of densities */
   float pressure;               /* fluid pressure in grid cell */
   float u_x;                    /* x-component of velocity in grid cell */
   float u_y;                    /* y-component of velocity in grid cell */
@@ -755,6 +753,7 @@ int write_values(const t_param params, t_speed *cells, int *obstacles, float *av
 
   for (int jj = 0; jj < params.ny; jj++)
   {
+    register unsigned int mul_val = bitwise_mul_int(jj, params.nx); 
     for (int ii = 0; ii < params.nx; ii++)
     {
       /* an occupied cell */
@@ -766,20 +765,24 @@ int write_values(const t_param params, t_speed *cells, int *obstacles, float *av
       /* no obstacle */
       else
       {
-        local_density = cells->speed_0[ii + jj * params.nx] 
-        + cells->speed_1[ii + jj * params.nx] + cells->speed_2[ii + jj * params.nx] 
-        + cells->speed_3[ii + jj * params.nx] + cells->speed_4[ii + jj * params.nx] 
-        + cells->speed_5[ii + jj * params.nx] + cells->speed_6[ii + jj * params.nx] 
-        + cells->speed_7[ii + jj * params.nx] + cells->speed_8[ii + jj * params.nx];
+        float speed_0 = cells->speed_0[ii + mul_val];
+        float speed_1 = cells->speed_1[ii + mul_val];
+        float speed_2 = cells->speed_2[ii + mul_val];
+        float speed_3 = cells->speed_3[ii + mul_val];
+        float speed_4 = cells->speed_4[ii + mul_val];
+        float speed_5 = cells->speed_5[ii + mul_val];
+        float speed_6 = cells->speed_6[ii + mul_val];
+        float speed_7 = cells->speed_7[ii + mul_val];
+        float speed_8 = cells->speed_8[ii + mul_val];
 
-        /* compute x velocity component */
-        u_x = (cells->speed_1[ii + jj * params.nx] + cells->speed_5[ii + jj * params.nx] 
-        + cells->speed_8[ii + jj * params.nx] - (cells->speed_3[ii + jj * params.nx]
-        + cells->speed_6[ii + jj * params.nx]  + cells->speed_7[ii + jj * params.nx])) / local_density;
+        /* local density total */
+        float local_density = speed_0 + speed_1 + speed_2 + speed_3 + speed_4 + speed_5 + speed_6 + speed_7 + speed_8;
+
+         /* compute x velocity component */
+        float u_x = (speed_1 + speed_5 + speed_8 - (speed_3 + speed_6 + speed_7)) / local_density;
         /* compute y velocity component */
-        u_y = (cells->speed_2[ii + jj * params.nx] + cells->speed_5[ii + jj * params.nx] 
-        + cells->speed_6[ii + jj * params.nx] - (cells->speed_4[ii + jj * params.nx] 
-        + cells->speed_7[ii + jj * params.nx] + cells->speed_8[ii + jj * params.nx])) / local_density;
+        float u_y = (speed_2 + speed_5 + speed_6 - (speed_4 + speed_7 + speed_8)) / local_density;
+       
         /* compute norm of velocity */
         u = sqrtf((u_x * u_x) + (u_y * u_y));
         /* compute pressure */
@@ -787,7 +790,7 @@ int write_values(const t_param params, t_speed *cells, int *obstacles, float *av
       }
 
       /* write to file */
-      fprintf(fp, "%d %d %.12E %.12E %.12E %.12E %d\n", ii, jj, u_x, u_y, u, pressure, obstacles[ii * params.nx + jj]);
+      fprintf(fp, "%d %d %.12E %.12E %.12E %.12E %d\n", ii, jj, u_x, u_y, u, pressure, obstacles[bitwise_mul_int(ii, params.nx) + jj]);
     }
   }
 
