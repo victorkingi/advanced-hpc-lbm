@@ -271,7 +271,7 @@ int bitwise_mod_int(unsigned int y, unsigned int x) {
   return y & (x - 1);
 }
 
-float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obstacles)
+float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles)
 {
   register unsigned int tot_cells = 0; /* no. of cells used in calculation */
   register float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
@@ -434,7 +434,7 @@ float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *ob
 }
 
 
-float av_velocity(const t_param params, t_speed *cells, int *obstacles)
+float av_velocity(const t_param params, t_speed* restrict cells, int* restrict obstacles)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
   float tot_u;       /* accumulated magnitudes of velocity for each cell */
@@ -557,7 +557,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
   */
 
   /* main grid */
-  *cells_ptr = (t_speed *)malloc(sizeof(t_speed) * 1);
+  *cells_ptr = (t_speed *)_mm_malloc(sizeof(t_speed), 64);
   (*cells_ptr)->speed_0 = (float *)malloc(sizeof(float) * (params->ny * params->nx));
   (*cells_ptr)->speed_1 = (float *)malloc(sizeof(float) * (params->ny * params->nx));
   (*cells_ptr)->speed_2 = (float *)malloc(sizeof(float) * (params->ny * params->nx));
@@ -583,7 +583,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
     die("cannot allocate memory for a speed in cells", __LINE__, __FILE__);
 
   /* 'helper' grid, used as scratch space */
-  *tmp_cells_ptr = (t_speed *)malloc(sizeof(t_speed) * 1);
+  *tmp_cells_ptr = (t_speed *)_mm_malloc(sizeof(t_speed), 64);
   (*tmp_cells_ptr)->speed_0 = (float *)malloc(sizeof(float) * (params->ny * params->nx));
   (*tmp_cells_ptr)->speed_1 = (float *)malloc(sizeof(float) * (params->ny * params->nx));
   (*tmp_cells_ptr)->speed_2 = (float *)malloc(sizeof(float) * (params->ny * params->nx));
