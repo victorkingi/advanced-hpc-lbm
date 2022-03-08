@@ -286,7 +286,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   float w1_ = params.density * params.accel / 9.f;
   float w2_ = params.density * params.accel / 36.f;
 
-  __assume_aligned(cells->speed_0, 64);
+  /*__assume_aligned(cells->speed_0, 64);
   __assume_aligned(cells->speed_1, 64);
   __assume_aligned(cells->speed_2, 64);
   __assume_aligned(cells->speed_3, 64);
@@ -294,7 +294,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(cells->speed_5, 64);
   __assume_aligned(cells->speed_6, 64);
   __assume_aligned(cells->speed_7, 64);
-  __assume_aligned(cells->speed_8, 64);
+  __assume_aligned(cells->speed_8, 64); */
 
   #pragma omp parallel for simd collapse(2) reduction(+:tot_cells, tot_u)
   for (unsigned int jj = 0; jj < params.ny; jj++)
