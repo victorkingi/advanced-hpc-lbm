@@ -798,7 +798,7 @@ int write_values(const t_param params, t_speed* restrict cells, int* restrict ob
       }
 
       /* write to file */
-      fprintf(fp, "%d %d %.12E %.12E %.12E %.12E %d\n", ii, jj, u_x, u_y, u, pressure, obstacles[bitwise_mul_int(ii, params.nx) + jj]);
+      fprintf(fp, "%d %d %.12E %.12E %.12E %.12E %d\n", ii, jj, u_x, u_y, u, pressure, obstacles[ii*params.nx + jj]);
     }
   }
 
