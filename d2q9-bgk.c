@@ -460,16 +460,15 @@ float av_velocity(const t_param params, t_speed* restrict cells, int* restrict o
       /* ignore occupied cells */
       if (!obstacles[ii + jj * params.nx])
       {
-        register unsigned int mul_val = bitwise_mul_int(jj, params.nx); 
-        float speed_0 = cells->speed_0[ii + mul_val];
-        float speed_1 = cells->speed_1[ii + mul_val];
-        float speed_2 = cells->speed_2[ii + mul_val];
-        float speed_3 = cells->speed_3[ii + mul_val];
-        float speed_4 = cells->speed_4[ii + mul_val];
-        float speed_5 = cells->speed_5[ii + mul_val];
-        float speed_6 = cells->speed_6[ii + mul_val];
-        float speed_7 = cells->speed_7[ii + mul_val];
-        float speed_8 = cells->speed_8[ii + mul_val];
+        float speed_0 = cells->speed_0[ii + jj*params.nx];
+        float speed_1 = cells->speed_1[ii + jj*params.nx];
+        float speed_2 = cells->speed_2[ii + jj*params.nx];
+        float speed_3 = cells->speed_3[ii + jj*params.nx];
+        float speed_4 = cells->speed_4[ii + jj*params.nx];
+        float speed_5 = cells->speed_5[ii + jj*params.nx];
+        float speed_6 = cells->speed_6[ii + jj*params.nx];
+        float speed_7 = cells->speed_7[ii + jj*params.nx];
+        float speed_8 = cells->speed_8[ii + jj*params.nx];
         /* local density total */
         float local_density = speed_0 + speed_1 + speed_2 + speed_3 + speed_4 + speed_5 + speed_6 + speed_7 + speed_8;
 
@@ -763,7 +762,6 @@ int write_values(const t_param params, t_speed* restrict cells, int* restrict ob
 
   for (int jj = 0; jj < params.ny; jj++)
   {
-    register unsigned int mul_val = bitwise_mul_int(jj, params.nx); 
     for (int ii = 0; ii < params.nx; ii++)
     {
       /* an occupied cell */
@@ -775,15 +773,15 @@ int write_values(const t_param params, t_speed* restrict cells, int* restrict ob
       /* no obstacle */
       else
       {
-        float speed_0 = cells->speed_0[ii + mul_val];
-        float speed_1 = cells->speed_1[ii + mul_val];
-        float speed_2 = cells->speed_2[ii + mul_val];
-        float speed_3 = cells->speed_3[ii + mul_val];
-        float speed_4 = cells->speed_4[ii + mul_val];
-        float speed_5 = cells->speed_5[ii + mul_val];
-        float speed_6 = cells->speed_6[ii + mul_val];
-        float speed_7 = cells->speed_7[ii + mul_val];
-        float speed_8 = cells->speed_8[ii + mul_val];
+        float speed_0 = cells->speed_0[ii + jj*params.nx];
+        float speed_1 = cells->speed_1[ii + jj*params.nx];
+        float speed_2 = cells->speed_2[ii + jj*params.nx];
+        float speed_3 = cells->speed_3[ii + jj*params.nx];
+        float speed_4 = cells->speed_4[ii + jj*params.nx];
+        float speed_5 = cells->speed_5[ii + jj*params.nx];
+        float speed_6 = cells->speed_6[ii + jj*params.nx];
+        float speed_7 = cells->speed_7[ii + jj*params.nx];
+        float speed_8 = cells->speed_8[ii + jj*params.nx];
 
         /* local density total */
         float local_density = speed_0 + speed_1 + speed_2 + speed_3 + speed_4 + speed_5 + speed_6 + speed_7 + speed_8;
