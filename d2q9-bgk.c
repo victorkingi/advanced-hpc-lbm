@@ -146,8 +146,8 @@ int main(int argc, char *argv[])
   char *paramfile = NULL;                                                            /* name of the input parameter file */
   char *obstaclefile = NULL;                                                         /* name of a the input obstacle file */
   t_param params;                                                                    /* struct to hold parameter values */
-  t_speed* restrict cells = NULL;                                                             /* grid containing fluid densities */
-  t_speed* restrict tmp_cells = NULL;                                                         /* scratch space */
+  t_speed* cells = NULL;                                                             /* grid containing fluid densities */
+  t_speed* tmp_cells = NULL;                                                         /* scratch space */
   int* restrict obstacles = NULL;                                                             /* grid indicating which cells are blocked */
   float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
   struct timeval timstr;                                                             /* structure to hold elapsed time */
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
-int accelerate_flow(const t_param params, t_speed *cells, int *obstacles)
+int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles)
 {
   /* compute weighting factors */
   float w1 = params.density * params.accel / 9.f;
@@ -272,7 +272,7 @@ unsigned int bitwise_mod_int(unsigned int y, unsigned int x) {
   return y & (x - 1);
 }
 
-float timestep(const t_param params, t_speed* cells, t_speed* tmp_cells, int* restrict obstacles)
+float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles)
 {
   register unsigned int tot_cells = 0; /* no. of cells used in calculation */
   register float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
@@ -437,7 +437,7 @@ float timestep(const t_param params, t_speed* cells, t_speed* tmp_cells, int* re
 }
 
 
-float av_velocity(const t_param params, t_speed* restrict cells, int* restrict obstacles)
+float av_velocity(const t_param params, t_speed* cells, int* obstacles)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
   float tot_u;       /* accumulated magnitudes of velocity for each cell */
