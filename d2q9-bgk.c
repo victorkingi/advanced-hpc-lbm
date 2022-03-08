@@ -249,7 +249,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   return EXIT_SUCCESS;
 }
 
-int bitwise_mul_int(unsigned int *y, unsigned int *x) {
+int bitwise_mul_int(unsigned int *y, const int *x) {
   if (!is_power_of_2) return *y*(*x);
   unsigned int pow = 0;
   unsigned int result = *x;
@@ -261,7 +261,7 @@ int bitwise_mul_int(unsigned int *y, unsigned int *x) {
   return *y << pow;
 }
 
-unsigned int bitwise_mod_int(unsigned int *y, unsigned int *x) {
+unsigned int bitwise_mod_int(unsigned int *y, const int *x) {
   if (!is_power_of_2) return *y % *x;
   unsigned int pow = 0;
   unsigned int result = *x;
