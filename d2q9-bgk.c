@@ -177,6 +177,7 @@ int main(int argc, char *argv[])
 
   accelerate_flow(params, cells, obstacles);
   is_power_of_2 = check_power_of_2(params.nx);
+
   for (int tt = 0; tt < params.maxIters; tt++)
   {
     av_vels[tt] = timestep(params, cells, tmp_cells, obstacles);
@@ -274,8 +275,8 @@ unsigned int bitwise_mod_int(unsigned int y, unsigned int x) {
 
 float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles)
 {
-  register unsigned int tot_cells = 0; /* no. of cells used in calculation */
-  register float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
+  unsigned int tot_cells = 0; /* no. of cells used in calculation */
+  float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
   const float c_sq = 1.f / 3.f; /* square of speed of sound */
   const float w0 = 4.f / 9.f;   /* weighting factor */
   const float w1 = 1.f / 9.f;   /* weighting factor */
@@ -284,20 +285,15 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   /* compute weighting factors */
   float w1_ = params.density * params.accel / 9.f;
   float w2_ = params.density * params.accel / 36.f;
-  register unsigned int jj;
-  register unsigned int ii;
 
-  #pragma omp parallel for collapse(2)
-  for (jj = 0; jj < params.ny; jj++)
+  #pragma omp parallel for simd collapse(2) reduction(+:tot_cells, tot_u)
+  for (int jj = 0; jj < params.ny; jj++)
   {
-    for (ii = 0; ii < params.nx; ii++)
+    for (int ii = 0; ii < params.nx; ii++)
     {
       unsigned int mul_val = bitwise_mul_int(jj, params.nx); 
       unsigned int is_obstacle = obstacles[mul_val + ii];
 
-      /**PROPAGATE: */
-      /* determine indices of axis-direction neighbours
-      ** respecting periodic boundary conditions (wrap around) */
       unsigned int y_n = bitwise_mod_int(jj + 1, params.ny);
       unsigned int x_e = bitwise_mod_int(ii + 1, params.nx);
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
