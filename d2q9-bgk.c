@@ -224,7 +224,7 @@ int accelerate_flow(const t_param params, t_speed *cells, int *obstacles)
   /* modify the 2nd row of the grid */
   int jj = params.ny - 2;
 
-  #pragma omp parallel for
+  //#pragma omp parallel for
   for (int ii = 0; ii < params.nx; ii++)
   {
     /* if the cell is not occupied and
@@ -287,7 +287,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   register unsigned int jj;
   register unsigned int ii;
 
-  #pragma omp parallel for collapse(2)
+  //#pragma omp parallel for collapse(2)
   for (jj = 0; jj < params.ny; jj++)
   {
     for (ii = 0; ii < params.nx; ii++)
