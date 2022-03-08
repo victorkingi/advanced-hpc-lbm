@@ -297,9 +297,9 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(cells->speed_8, 64);
 
   //#pragma omp parallel for simd collapse(2) reduction(+:tot_cells, tot_u)
-  for (int jj = 0; jj < params.ny; jj++)
+  for (unsigned int jj = 0; jj < params.ny; jj++)
   {
-    for (int ii = 0; ii < params.nx; ii++)
+    for (unsigned int ii = 0; ii < params.nx; ii++)
     {
       unsigned int mul_val = bitwise_mul_int(&jj, &params.nx); 
       unsigned int is_obstacle = obstacles[mul_val + ii];
