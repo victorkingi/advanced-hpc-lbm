@@ -75,15 +75,15 @@ typedef struct
 /* struct to hold the 'speed' values */
 typedef struct
 {
-  float* speed_0;
-  float* speed_1;
-  float* speed_2;
-  float* speed_3;
-  float* speed_4;
-  float* speed_5;
-  float* speed_6;
-  float* speed_7;
-  float* speed_8;
+  float* restrict speed_0;
+  float* restrict speed_1;
+  float* restrict speed_2;
+  float* restrict speed_3;
+  float* restrict speed_4;
+  float* restrict speed_5;
+  float* restrict speed_6;
+  float* restrict speed_7;
+  float* restrict speed_8;
 
 } t_speed;
 
@@ -146,9 +146,9 @@ int main(int argc, char *argv[])
   char *paramfile = NULL;                                                            /* name of the input parameter file */
   char *obstaclefile = NULL;                                                         /* name of a the input obstacle file */
   t_param params;                                                                    /* struct to hold parameter values */
-  t_speed *cells = NULL;                                                             /* grid containing fluid densities */
-  t_speed *tmp_cells = NULL;                                                         /* scratch space */
-  int *obstacles = NULL;                                                             /* grid indicating which cells are blocked */
+  t_speed* restrict cells = NULL;                                                             /* grid containing fluid densities */
+  t_speed* restrict tmp_cells = NULL;                                                         /* scratch space */
+  int* restrict obstacles = NULL;                                                             /* grid indicating which cells are blocked */
   float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
@@ -272,7 +272,7 @@ unsigned int bitwise_mod_int(unsigned int y, unsigned int x) {
   return y & (x - 1);
 }
 
-float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles)
+float timestep(const t_param params, t_speed* cells, t_speed* tmp_cells, int* restrict obstacles)
 {
   register unsigned int tot_cells = 0; /* no. of cells used in calculation */
   register float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
@@ -303,6 +303,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
+      
       register float speed_0 = cells->speed_0[ii + mul_val];   /* central cell, no movement */
       register float speed_1 = cells->speed_1[x_w + mul_val];  /* east */
       register float speed_2 = cells->speed_2[ii + bitwise_mul_int(y_s, params.nx)];  /* north */
