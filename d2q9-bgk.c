@@ -102,21 +102,21 @@ int initialise(const char *paramfile, const char *obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate(), rebound() & collision()
 */
-float timestep(const t_param params, t_speed *cells, t_speed *tmp_cells, int *obstacles);
-int accelerate_flow(const t_param params, t_speed *cells, int *obstacles);
-int write_values(const t_param params, t_speed *cells, int *obstacles, float *av_vels);
+float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles);
+int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles);
+int write_values(const t_param params, t_speed* restrict cells, int* restrict obstacles, float* restrict av_vels);
 
 /* finalise, including freeing up allocated memory */
-int finalise(const t_param *params, t_speed **cells_ptr, t_speed **tmp_cells_ptr,
-             int **obstacles_ptr, float **av_vels_ptr);
+int finalise(const t_param *params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
+             int** restrict obstacles_ptr, float** restrict av_vels_ptr);
 
 /* Sum all the densities in the grid.
 ** The total should remain constant from one timestep to the next. */
-float total_density(const t_param params, t_speed *cells);
+float total_density(const t_param params, t_speed* restrict cells);
 
 
 /* calculate Reynolds number */
-float calc_reynolds(const t_param params, t_speed *cells, int *obstacles);
+float calc_reynolds(const t_param params, t_speed* restrict cells, int* restrict obstacles);
 
 /* utility functions */
 void die(const char *message, const int line, const char *file);
@@ -249,28 +249,28 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   return EXIT_SUCCESS;
 }
 
-int bitwise_mul_int(unsigned int y, unsigned int x) {
-  if (!is_power_of_2) return y*x;
+int bitwise_mul_int(unsigned int *y, unsigned int *x) {
+  if (!is_power_of_2) return *y*(*x);
   unsigned int pow = 0;
-  unsigned int result = x;
+  unsigned int result = *x;
   while (result != 1)
   {
     result = result >> 1;
     pow++;
   }
-  return y << pow;
+  return *y << pow;
 }
 
-unsigned int bitwise_mod_int(unsigned int y, unsigned int x) {
-  if (!is_power_of_2) return y % x;
+unsigned int bitwise_mod_int(unsigned int *y, unsigned int *x) {
+  if (!is_power_of_2) return *y % *x;
   unsigned int pow = 0;
-  unsigned int result = x;
+  unsigned int result = *x;
   while (result != 1)
   {
     result = result >> 1;
     pow++;
   }
-  return y & (x - 1);
+  return *y & (*x - 1);
 }
 
 float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles)
@@ -295,29 +295,31 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(cells->speed_6, 64);
   __assume_aligned(cells->speed_7, 64);
   __assume_aligned(cells->speed_8, 64);
-  
+
   //#pragma omp parallel for simd collapse(2) reduction(+:tot_cells, tot_u)
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
     {
-      unsigned int mul_val = bitwise_mul_int(jj, params.nx); 
+      unsigned int mul_val = bitwise_mul_int(&jj, &params.nx); 
       unsigned int is_obstacle = obstacles[mul_val + ii];
+      unsigned int jj_1 = jj+1;
+      unsigned int ii_1 = ii+1;
 
-      unsigned int y_n = bitwise_mod_int(jj + 1, params.ny);
-      unsigned int x_e = bitwise_mod_int(ii + 1, params.nx);
+      unsigned int y_n = bitwise_mod_int(&jj_1, &params.ny);
+      unsigned int x_e = bitwise_mod_int(&ii_1, &params.nx);
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
       register float speed_0 = cells->speed_0[ii + mul_val];   /* central cell, no movement */
       register float speed_1 = cells->speed_1[x_w + mul_val];  /* east */
-      register float speed_2 = cells->speed_2[ii + bitwise_mul_int(y_s, params.nx)];  /* north */
+      register float speed_2 = cells->speed_2[ii + bitwise_mul_int(&y_s, &params.nx)];  /* north */
       register float speed_3 = cells->speed_3[x_e + mul_val];  /* west */
-      register float speed_4 = cells->speed_4[ii + bitwise_mul_int(y_n, params.nx)];  /* south */
-      register float speed_5 = cells->speed_5[x_w + bitwise_mul_int(y_s, params.nx)]; /* north-east */
-      register float speed_6 = cells->speed_6[x_e + bitwise_mul_int(y_s, params.nx)]; /* north-west */
-      register float speed_7 = cells->speed_7[x_e + bitwise_mul_int(y_n, params.nx)]; /* south-west */
-      register float speed_8 = cells->speed_8[x_w + bitwise_mul_int(y_n, params.nx)]; /* south-east */
+      register float speed_4 = cells->speed_4[ii + bitwise_mul_int(&y_n, &params.nx)];  /* south */
+      register float speed_5 = cells->speed_5[x_w + bitwise_mul_int(&y_s, &params.nx)]; /* north-east */
+      register float speed_6 = cells->speed_6[x_e + bitwise_mul_int(&y_s, &params.nx)]; /* north-west */
+      register float speed_7 = cells->speed_7[x_e + bitwise_mul_int(&y_n, &params.nx)]; /* south-west */
+      register float speed_8 = cells->speed_8[x_w + bitwise_mul_int(&y_n, &params.nx)]; /* south-east */
 
       /**If cell contains an obstacle rebound else collision occurs */
       if (is_obstacle)
@@ -442,7 +444,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
 }
 
 
-float av_velocity(const t_param params, t_speed* cells, int* obstacles)
+float av_velocity(const t_param params, t_speed* restrict cells, int* restrict obstacles)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
   float tot_u;       /* accumulated magnitudes of velocity for each cell */
@@ -717,14 +719,14 @@ int finalise(const t_param *params, t_speed **cells_ptr, t_speed **tmp_cells_ptr
   return EXIT_SUCCESS;
 }
 
-float calc_reynolds(const t_param params, t_speed *cells, int *obstacles)
+float calc_reynolds(const t_param params, t_speed* restrict cells, int* restrict obstacles)
 {
   const float viscosity = 1.f / 6.f * (2.f / params.omega - 1.f);
 
   return av_velocity(params, cells, obstacles) * params.reynolds_dim / viscosity;
 }
 
-float total_density(const t_param params, t_speed *cells)
+float total_density(const t_param params, t_speed* restrict cells)
 {
   float total = 0.f; /* accumulator */
 
@@ -743,7 +745,7 @@ float total_density(const t_param params, t_speed *cells)
   return total;
 }
 
-int write_values(const t_param params, t_speed *cells, int *obstacles, float *av_vels)
+int write_values(const t_param params, t_speed* restrict cells, int* restrict obstacles, float* restrict av_vels)
 {
   FILE *fp;                     /* file pointer */
   const float c_sq = 1.f / 3.f; /* sq. of speed of sound */
