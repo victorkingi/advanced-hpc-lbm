@@ -299,6 +299,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   //#pragma omp parallel for collapse(2)
   for (jj = 0; jj < params.ny; jj++)
   {
+    #pragma omp simd
     for (ii = 0; ii < params.nx; ii++)
     {
       unsigned int mul_val = bitwise_mul_int(jj, params.nx); 
