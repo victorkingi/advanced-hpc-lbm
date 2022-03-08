@@ -286,6 +286,15 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   float w2_ = params.density * params.accel / 36.f;
   register unsigned int jj;
   register unsigned int ii;
+  __assume_aligned(cells->speed_0, 64);
+  __assume_aligned(cells->speed_1, 64);
+  __assume_aligned(cells->speed_2, 64);
+  __assume_aligned(cells->speed_3, 64);
+  __assume_aligned(cells->speed_4, 64);
+  __assume_aligned(cells->speed_5, 64);
+  __assume_aligned(cells->speed_6, 64);
+  __assume_aligned(cells->speed_7, 64);
+  __assume_aligned(cells->speed_8, 64);
 
   //#pragma omp parallel for collapse(2)
   for (jj = 0; jj < params.ny; jj++)
@@ -303,7 +312,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
-      
       register float speed_0 = cells->speed_0[ii + mul_val];   /* central cell, no movement */
       register float speed_1 = cells->speed_1[x_w + mul_val];  /* east */
       register float speed_2 = cells->speed_2[ii + bitwise_mul_int(y_s, params.nx)];  /* north */
