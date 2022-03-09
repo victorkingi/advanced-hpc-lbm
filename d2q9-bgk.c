@@ -578,7 +578,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
   */
 
   /* main grid */
-  *cells_ptr = (t_speed *)__mm_malloc(sizeof(t_speed), 64);
+  *cells_ptr = (t_speed *)_mm_malloc(sizeof(t_speed), 64);
   (*cells_ptr)->speed_0 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*cells_ptr)->speed_1 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*cells_ptr)->speed_2 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
