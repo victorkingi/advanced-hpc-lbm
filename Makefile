@@ -3,7 +3,7 @@
 EXE=d2q9-bgk
 
 CC=icc
-CFLAGS= -O3 -fast -xCORE-AVX2 -complex-limited-range -qopenmp
+CFLAGS= -O3 -fast -xCORE-AVX2 -qopenmp
 
 FINAL_STATE_FILE=./final_state.dat
 AV_VELS_FILE=./av_vels.dat
