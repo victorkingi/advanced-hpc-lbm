@@ -286,7 +286,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   float w1_ = params.density * params.accel / 9.f;
   float w2_ = params.density * params.accel / 36.f;
 
-  __assume_aligned(cells, 64);
   __assume_aligned(cells->speed_0, 64);
   __assume_aligned(cells->speed_1, 64);
   __assume_aligned(cells->speed_2, 64);
@@ -297,7 +296,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(cells->speed_7, 64);
   __assume_aligned(cells->speed_8, 64);
 
-  __assume_aligned(tmp_cells, 64);
   __assume_aligned(tmp_cells->speed_0, 64);
   __assume_aligned(tmp_cells->speed_1, 64);
   __assume_aligned(tmp_cells->speed_2, 64);
@@ -578,7 +576,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
   */
 
   /* main grid */
-  *cells_ptr = (t_speed *)_mm_malloc(sizeof(t_speed), 64);
+  *cells_ptr = (t_speed *)malloc(sizeof(t_speed));
   (*cells_ptr)->speed_0 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*cells_ptr)->speed_1 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*cells_ptr)->speed_2 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
@@ -604,7 +602,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
     die("cannot allocate memory for a speed in cells", __LINE__, __FILE__);
 
   /* 'helper' grid, used as scratch space */
-  *tmp_cells_ptr = (t_speed *)_mm_malloc(sizeof(t_speed), 64);
+  *tmp_cells_ptr = (t_speed *)malloc(sizeof(t_speed));
   (*tmp_cells_ptr)->speed_0 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*tmp_cells_ptr)->speed_1 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*tmp_cells_ptr)->speed_2 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
