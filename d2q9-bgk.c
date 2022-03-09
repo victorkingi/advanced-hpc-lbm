@@ -263,13 +263,6 @@ int bitwise_mul_int(unsigned int *y, const int *x) {
 
 unsigned int bitwise_mod_int(unsigned int *y, const int *x) {
   if (!is_power_of_2) return *y % *x;
-  unsigned int pow = 0;
-  unsigned int result = *x;
-  while (result != 1)
-  {
-    result = result >> 1;
-    pow++;
-  }
   return *y & (*x - 1);
 }
 
