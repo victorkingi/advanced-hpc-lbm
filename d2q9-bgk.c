@@ -298,6 +298,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(tmp_cells->speed_7, 64);
   __assume_aligned(tmp_cells->speed_8, 64);
 
+  #pragma omp simd
   for (unsigned int jj = 0; jj < params.ny; jj++)
   {
     for (unsigned int ii = 0; ii < params.nx; ii++)
