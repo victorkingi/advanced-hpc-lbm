@@ -266,7 +266,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   float w1_ = params.density * params.accel / 9.f;
   float w2_ = params.density * params.accel / 36.f;
 
-  __assume_aligned(obstacles, 64);
+  //__assume_aligned(obstacles, 64);
 
   __assume_aligned(cells->speed_0, 64);
   __assume_aligned(cells->speed_1, 64);
@@ -297,8 +297,8 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       unsigned int jj_1 = jj+1;
       unsigned int ii_1 = ii+1;
 
-      unsigned int y_n = bitwise_mod_int(&jj_1, &params.ny);
-      unsigned int x_e = bitwise_mod_int(&ii_1, &params.nx);
+      unsigned int y_n = (is_power_of_2) ? (jj+1 & (params.ny - 1)) : ((jj+1) % params.ny);
+      unsigned int x_e = (is_power_of_2) ? (ii+1 & (params.nx - 1)) : ((ii+1) % params.nx);
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
