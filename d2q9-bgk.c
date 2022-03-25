@@ -287,11 +287,11 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(tmp_cells->speed_8, 64);
 
   #pragma omp simd reduction(+:tot_cells, tot_u)
-  for (unsigned int jj = 0; jj < params.ny; jj++)
+  for (int jj = 0; jj < params.ny; jj++)
   {
-    for (unsigned int ii = 0; ii < params.nx; ii++)
+    for (int ii = 0; ii < params.nx; ii++)
     {
-      unsigned int is_obstacle = obstacles[jj*params.nx + ii];
+      int is_obstacle = obstacles[jj*params.nx + ii];
       unsigned int jj_1 = jj+1;
       unsigned int ii_1 = ii+1;
 
