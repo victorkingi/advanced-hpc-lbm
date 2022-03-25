@@ -292,6 +292,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
 
       unsigned int y_n = (jj+1) % params.ny;
       unsigned int x_e = (ii+1) % params.nx;
+      printf("%u %u\n", y_n, x_e);
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
