@@ -225,7 +225,6 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   /* modify the 2nd row of the grid */
   int jj = params.ny - 2;
 
-  //#pragma omp parallel for
   for (int ii = 0; ii < params.nx; ii++)
   {
     /* if the cell is not occupied and
@@ -299,7 +298,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(tmp_cells->speed_7, 64);
   __assume_aligned(tmp_cells->speed_8, 64);
 
-  #pragma omp parallel for collapse(2) reduction(+:tot_cells, tot_u)
   for (unsigned int jj = 0; jj < params.ny; jj++)
   {
     for (unsigned int ii = 0; ii < params.nx; ii++)
@@ -380,6 +378,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
                                           + ((u_x + u_y) * (u_x + u_y)) / (2.f * c_sq * c_sq)
                                           - u_sq / (2.f * c_sq));
           
+  #pragma omp parallel for collapse(2) reduction(+:tot_cells, tot_u)
         speed_5 = speed_5 + params.omega * (d_equ - speed_5);
 
         d_equ = w2 * local_density * (1.f + (-u_x + u_y) / c_sq
@@ -631,7 +630,6 @@ int initialise(const char *paramfile, const char *obstaclefile,
   float w1 = params->density / 9.f;
   float w2 = params->density / 36.f;
 
-  #pragma omp parallel for collapse(2)
   for (int jj = 0; jj < params->ny; jj++)
   {
     for (int ii = 0; ii < params->nx; ii++)
