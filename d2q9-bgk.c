@@ -378,7 +378,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
                                           + ((u_x + u_y) * (u_x + u_y)) / (2.f * c_sq * c_sq)
                                           - u_sq / (2.f * c_sq));
           
-  #pragma omp parallel for collapse(2) reduction(+:tot_cells, tot_u)
         speed_5 = speed_5 + params.omega * (d_equ - speed_5);
 
         d_equ = w2 * local_density * (1.f + (-u_x + u_y) / c_sq
