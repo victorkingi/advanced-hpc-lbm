@@ -248,11 +248,6 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   return EXIT_SUCCESS;
 }
 
-unsigned int bitwise_mod_int(unsigned int *y, const int *x) {
-  if (!is_power_of_2) return *y % *x;
-  return *y & (*x - 1);
-}
-
 float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
@@ -294,8 +289,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
     for (int ii = 0; ii < params.nx; ii++)
     {
       int is_obstacle = obstacles[jj*params.nx + ii];
-      unsigned int jj_1 = jj+1;
-      unsigned int ii_1 = ii+1;
 
       unsigned int y_n = (is_power_of_2) ? (jj+1 & (params.ny - 1)) : ((jj+1) % params.ny);
       unsigned int x_e = (is_power_of_2) ? (ii+1 & (params.nx - 1)) : ((ii+1) % params.nx);
@@ -609,7 +602,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
     die("cannot allocate memory for a speed in tmp_cells", __LINE__, __FILE__);
 
   /* the map of obstacles */
-  *obstacles_ptr = _mm_malloc(sizeof(int) * (params->ny * params->nx), 64);
+  *obstacles_ptr = malloc(sizeof(int) * (params->ny * params->nx));
 
   if (*obstacles_ptr == NULL)
     die("cannot allocate column memory for obstacles", __LINE__, __FILE__);
