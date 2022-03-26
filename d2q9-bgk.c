@@ -261,7 +261,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   float w1_ = params.density * params.accel / 9.f;
   float w2_ = params.density * params.accel / 36.f;
 
-  //__assume_aligned(obstacles, 64);
+  __assume_aligned(obstacles, 64);
 
   __assume_aligned(cells->speed_0, 64);
   __assume_aligned(cells->speed_1, 64);
@@ -282,14 +282,14 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(tmp_cells->speed_6, 64);
   __assume_aligned(tmp_cells->speed_7, 64);
   __assume_aligned(tmp_cells->speed_8, 64);
+  __assume((params.nx)%2==0);
+  __assume((params.ny)%2==0);
 
   #pragma omp simd reduction(+:tot_cells, tot_u)
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
     {
-      unsigned int is_obstacle = obstacles[jj*params.nx + ii];
-
       unsigned int y_n = (is_power_of_2) ? ((jj+1) & (params.ny - 1)) : ((jj+1) % params.ny);
       unsigned int x_e = (is_power_of_2) ? ((ii+1) & (params.nx - 1)) : ((ii+1) % params.nx);
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
@@ -306,7 +306,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       register float speed_8 = cells->speed_8[x_w + y_n*params.nx]; /* south-east */
 
       /**If cell contains an obstacle rebound else collision occurs */
-      if (is_obstacle)
+      if (obstacles[jj*params.nx + ii])
       {
         /* called after propagate, so taking values from scratch space
         ** mirroring, and writing into main grid */
@@ -394,7 +394,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
         /* if the cell is not occupied and
         ** we don't send a negative density */
         if (jj == params.ny-2 
-        && !is_obstacle
+        && !obstacles[jj*params.nx + ii]
         && (speed_3 - w1_) > 0.f 
         && (speed_6 - w2_) > 0.f 
         && (speed_7 - w2_) > 0.f)
