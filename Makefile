@@ -3,7 +3,7 @@
 EXE=d2q9-bgk
 
 CC=icc
-CFLAGS= -O3 -fast -xCORE-AVX2 -qopt-report=5 -qopt-report-phase:vec -qopenmp
+CFLAGS= -O3 -fast -xCORE-AVX512 -qopt-report=5 -qopt-report-phase:vec -qopenmp
 LIBS= -lm
 
 FINAL_STATE_FILE=./final_state.dat

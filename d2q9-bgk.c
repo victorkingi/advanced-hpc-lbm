@@ -55,7 +55,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <limits.h>
 
 #define NSPEEDS 9
 #define FINALSTATEFILE "final_state.dat"
@@ -286,9 +285,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume((params.nx)%2==0);
   __assume((params.ny)%2==0);
 
-  int lowest = INT_MAX;
-  int highest = INT_MIN;
-
   #pragma omp simd reduction(+:tot_cells, tot_u)
   for (int jj = 0; jj < params.ny; jj++)
   {
@@ -301,20 +297,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
       register float speed_0 = cells->speed_0[ii + jj*params.nx];   /* central cell, no movement */
-      if ((ii + jj*params.nx) < lowest) lowest = ii + jj*params.nx;
-      if (x_w + jj*params.nx < lowest) lowest = x_w + jj*params.nx;
-      if (ii + y_s * params.nx < lowest) lowest = ii + y_s * params.nx;
-      if (ii + y_n*params.nx < lowest) lowest = ii + y_n*params.nx;
-      if (x_w + y_s*params.nx < lowest) lowest = x_w + y_s*params.nx;
-      if (x_w + y_n*params.nx < lowest) lowest = x_w + y_n*params.nx;
-
-      if ((ii + jj*params.nx) > highest) highest = ii + jj*params.nx;
-      if (x_w + jj*params.nx > highest) highest = x_w + jj*params.nx;
-      if (ii + y_s * params.nx > highest) highest = ii + y_s * params.nx;
-      if (ii + y_n*params.nx > highest) highest = ii + y_n*params.nx;
-      if (x_w + y_s*params.nx > highest) highest = x_w + y_s*params.nx;
-      if (x_w + y_n*params.nx > highest) highest = x_w + y_n*params.nx;
-      
       register float speed_1 = cells->speed_1[x_w + jj*params.nx];  /* east */
       register float speed_2 = cells->speed_2[ii + y_s * params.nx];  /* north */
       register float speed_3 = cells->speed_3[x_e + jj*params.nx];  /* west */
@@ -442,7 +424,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       }
     }
   }
-  printf("highest: %d, lowest: %d\n", highest, lowest);
 
   return tot_u / (float)tot_cells;
 }
