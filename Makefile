@@ -2,7 +2,7 @@
 
 EXE=d2q9-bgk
 
-CC=icc
+CC=mpiicc
 CFLAGS= -O3 -fast -xCORE-AVX2 -qopt-report=5 -qopt-report-phase:vec -qopenmp
 LIBS= -lm
 
