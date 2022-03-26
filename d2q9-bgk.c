@@ -55,6 +55,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <limits.h>
 
 #define NSPEEDS 9
 #define FINALSTATEFILE "final_state.dat"
@@ -285,8 +286,8 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume((params.nx)%2==0);
   __assume((params.ny)%2==0);
 
-  int lowest = INFINITY;
-  int highest = -INFINITY;
+  int lowest = INT_MAX;
+  int highest = INT_MIN;
 
   #pragma omp simd reduction(+:tot_cells, tot_u)
   for (int jj = 0; jj < params.ny; jj++)
