@@ -302,18 +302,43 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
         if (temp < 0) break;
         x_e = temp;
       }
-      unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
-      unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
+      int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
+      int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
       register float speed_0 = cells->speed_0[ii + jj*params.nx];   /* central cell, no movement */
-      register float speed_1 = cells->speed_1[x_w + jj*params.nx];  /* east */
-      register float speed_2 = cells->speed_2[ii + y_s * params.nx];  /* north */
       register float speed_3 = cells->speed_3[x_e + jj*params.nx];  /* west */
       register float speed_4 = cells->speed_4[ii + y_n*params.nx];  /* south */
-      register float speed_5 = cells->speed_5[x_w + y_s*params.nx]; /* north-east */
-      register float speed_6 = cells->speed_6[x_e + y_s*params.nx]; /* north-west */
+      register float speed_1;
+      register float speed_2;
+      register float speed_5;
+      register float speed_6;
+      register float speed_8;
+      if (jj == 0 && ii == 0) {
+        speed_2 = cells->speed_2[ii + (jj + params.ny - 1) * params.nx];  /* north */
+        speed_5 = cells->speed_5[(ii + params.nx - 1) + (jj + params.ny - 1)*params.nx]; /* north-east */
+        speed_6 = cells->speed_6[x_e + (jj + params.ny - 1)*params.nx]; /* north-west */
+        speed_1 = cells->speed_1[(ii + params.nx - 1) + jj*params.nx];  /* east */
+        speed_8 = cells->speed_8[(ii + params.nx - 1) + y_n*params.nx]; /* south-east */
+      } else if (jj == 0 && ii != 0) {
+        speed_2 = cells->speed_2[ii + (jj + params.ny - 1) * params.nx];  /* north */
+        speed_5 = cells->speed_5[(ii - 1) + (jj + params.ny - 1)*params.nx]; /* north-east */
+        speed_6 = cells->speed_6[x_e + (jj + params.ny - 1)*params.nx]; /* north-west */
+        speed_1 = cells->speed_1[(ii - 1) + jj*params.nx];  /* east */
+        speed_8 = cells->speed_8[(ii - 1) + y_n*params.nx]; /* south-east */
+      } else if (jj != 0 && ii == 0) {
+        speed_2 = cells->speed_2[ii + (jj - 1) * params.nx];  /* north */
+        speed_5 = cells->speed_5[(ii + params.nx - 1) + (jj - 1)*params.nx]; /* north-east */
+        speed_6 = cells->speed_6[x_e + (jj - 1)*params.nx]; /* north-west */
+        speed_1 = cells->speed_1[(ii + params.nx - 1) + jj*params.nx];  /* east */
+        speed_8 = cells->speed_8[(ii + params.nx - 1) + y_n*params.nx]; /* south-east */
+      } else {
+        speed_2 = cells->speed_2[ii + (jj - 1) * params.nx];  /* north */
+        speed_5 = cells->speed_5[(ii - 1) + (jj - 1)*params.nx]; /* north-east */
+        speed_6 = cells->speed_6[x_e + (jj - 1)*params.nx]; /* north-west */
+        speed_1 = cells->speed_1[(ii - 1) + jj*params.nx];  /* east */
+        speed_8 = cells->speed_8[(ii - 1) + y_n*params.nx]; /* south-east */
+      }
       register float speed_7 = cells->speed_7[x_e + y_n*params.nx]; /* south-west */
-      register float speed_8 = cells->speed_8[x_w + y_n*params.nx]; /* south-east */
 
       /**If cell contains an obstacle rebound else collision occurs */
       if (is_obstacle)
