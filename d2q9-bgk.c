@@ -694,9 +694,7 @@ int finalise(const t_param *params, t_speed **cells_ptr, t_speed **tmp_cells_ptr
   _mm_free(*tmp_cells_ptr);
   *tmp_cells_ptr = NULL;
 
-  _mm_free(*obstacles_ptr);
   *obstacles_ptr = NULL;
-
 
   free(*av_vels_ptr);
   *av_vels_ptr = NULL;
