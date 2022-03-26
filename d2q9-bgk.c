@@ -285,6 +285,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume((params.nx)%2==0);
   __assume((params.ny)%2==0);
 
+
   #pragma omp simd reduction(+:tot_cells, tot_u)
   for (int jj = 0; jj < params.ny; jj++)
   {
@@ -295,12 +296,14 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       unsigned int x_e = (ii+1 == params.nx) ? 0 : (ii+1);
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
+      int speed_2_mx = y_s*params.nx;
       __assume(y_n < 128);
       __assume(x_e < 128);
+      printf("speed: %d\n", speed_2_mx);
 
       register float speed_0 = cells->speed_0[ii + jj*params.nx];   /* central cell, no movement */
       register float speed_1 = cells->speed_1[x_w + jj*params.nx];  /* east */
-      register float speed_2 = cells->speed_2[ii + y_s * params.nx];  /* north */
+      register float speed_2 = cells->speed_2[ii + speed_2_mx];  /* north */
       register float speed_3 = cells->speed_3[x_e + jj*params.nx];  /* west */
       register float speed_4 = cells->speed_4[ii + y_n*params.nx];  /* south */
       register float speed_5 = cells->speed_5[x_w + y_s*params.nx]; /* north-east */
