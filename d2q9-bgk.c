@@ -290,12 +290,14 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   {
     for (int ii = 0; ii < params.nx; ii++)
     {
+      __assume(((obstacles[jj*params.nx + ii])) == 0 || ((obstacles[jj*params.nx + ii]) == 1));
       unsigned int y_n = (is_power_of_2) ? ((jj+1) & (params.ny - 1)) : ((jj+1) % params.ny);
       unsigned int x_e = (is_power_of_2) ? ((ii+1) & (params.nx - 1)) : ((ii+1) % params.nx);
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
       register float speed_0 = cells->speed_0[ii + jj*params.nx];   /* central cell, no movement */
+      printf("0: %d, 1: %d, 2: %d, 4: %d, 5: %d, 8: %d\n", (ii + jj*params.nx), x_w + jj*params.nx, ii + y_s * params.nx, ii + y_n*params.nx, x_w + y_s*params.nx, x_w + y_n*params.nx);
       register float speed_1 = cells->speed_1[x_w + jj*params.nx];  /* east */
       register float speed_2 = cells->speed_2[ii + y_s * params.nx];  /* north */
       register float speed_3 = cells->speed_3[x_e + jj*params.nx];  /* west */
