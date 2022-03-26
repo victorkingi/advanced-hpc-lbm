@@ -260,10 +260,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   /* compute weighting factors */
   float w1_ = params.density * params.accel / 9.f;
   float w2_ = params.density * params.accel / 36.f;
-  unsigned int y_n;
-  unsigned int x_e;
-  unsigned int y_s;
-  unsigned int x_w;
 
   __assume_aligned(obstacles, 64);
 
@@ -288,11 +284,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(tmp_cells->speed_8, 64);
   __assume((params.nx)%2==0);
   __assume((params.ny)%2==0);
-  __assume(y_n < 128);
-  __assume(x_e < 128);
-  __assume(y_s < params.ny - 1);
-  __assume(x_w < params.nx - 1);
-
 
   #pragma omp simd reduction(+:tot_cells, tot_u)
   for (int jj = 0; jj < params.ny; jj++)
@@ -304,6 +295,10 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       unsigned int x_e = (ii+1 == params.nx) ? 0 : (ii+1);
       unsigned int y_s = (jj == 0) ? (params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (params.nx - 1) : (ii - 1);
+      __assume(y_n < 128);
+      __assume(x_e < 128);
+      __assume(y_s < params.ny - 1);
+      __assume(x_w < params.nx - 1);
 
       register float speed_0 = cells->speed_0[ii + jj*params.nx];   /* central cell, no movement */
       register float speed_1 = cells->speed_1[x_w + jj*params.nx];  /* east */
@@ -789,7 +784,7 @@ int write_values(const t_param params, t_speed* restrict cells, unsigned int* re
       }
 
       /* write to file */
-      fprintf(fp, "%d %d %.12E %.12E %.12E %.12E %d\n", ii, jj, u_x, u_y, u, pressure, obstacles[ii*params.nx + jj]);
+      fprintf(fp, "%d %d %.12E %.12E %.12E %.12E %d\n", ii, jj, u_x, u_y, u, pressure, obstacles[ii + params.nx * jj]);
     }
   }
 
