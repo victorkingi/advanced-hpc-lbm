@@ -290,8 +290,18 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
     {
       int is_obstacle = obstacles[jj*params.nx + ii];
 
-      unsigned int y_n = (jj+1) % params.ny;
-      unsigned int x_e = (ii+1) % params.nx;
+      unsigned int y_n = jj+1;
+      unsigned int x_e = ii+1;
+      for (;;) {
+        int temp = y_n - params.ny;
+        if (temp < 0) break;
+        y_n = temp;
+      }
+      for (;;) {
+        int temp = x_e - params.nx;
+        if (temp < 0) break;
+        x_e = temp;
+      }
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
 
