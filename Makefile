@@ -3,7 +3,7 @@
 EXE=d2q9-bgk
 
 CC=mpiicc
-CFLAGS= -O3 -fast -xCORE-AVX2 -qopenmp -fPIE
+CFLAGS= -O3 -xCORE-AVX2 -qopenmp
 LIBS= -lm
 
 FINAL_STATE_FILE=./final_state.dat
