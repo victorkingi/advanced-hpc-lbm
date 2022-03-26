@@ -295,6 +295,8 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       unsigned int x_e = (is_power_of_2) ? ((ii+1) & (params.nx - 1)) : ((ii+1) % params.nx);
       unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
+      printf("case %d %% %d = %d\n", (jj+1), params.ny, y_n);
+      printf("case %d %% %d = %d\n", (ii+1), params.nx, x_e);
       __assume(y_n < 128);
       __assume(x_e < 128);
 
