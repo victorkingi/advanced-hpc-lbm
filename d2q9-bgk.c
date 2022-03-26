@@ -301,7 +301,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       __assume(x_e < 128);
       __assume(y_s < params.ny - 1);
       __assume(x_w < params.nx - 1);
-      __assume(speed_2_mx%128==0);
+      __assume(speed_2_mx%16==0);
 
       register float speed_0 = cells->speed_0[ii + jj*params.nx];   /* central cell, no movement */
       register float speed_1 = cells->speed_1[x_w + jj*params.nx];  /* east */
