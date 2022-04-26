@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
   //MPI INIT
   int size;               /* size of cohort, i.e. num processes started */
   int flag;               /* for checking whether MPI_Init() has been called */
-  int strlen;             /* length of a character array */
+  int strlen_;             /* length of a character array */
   enum bool {FALSE,TRUE}; /* enumerated type: false = 0, true = 1 */  
   char hostname[MPI_MAX_PROCESSOR_NAME];  /* character array to hold hostname running process */
   int myrank;            /* the rank of this process */
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
   }
 
   /* determine the hostname */
-  MPI_Get_processor_name(hostname,&strlen);
+  MPI_Get_processor_name(hostname,&strlen_);
 
   /* 
   ** determine the SIZE of the group of processes associated with
