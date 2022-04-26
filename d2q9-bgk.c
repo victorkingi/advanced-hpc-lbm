@@ -64,6 +64,8 @@
 #define NROWS 4
 #define NCOLS 16
 #define MASTER 0
+#define EPSILON 0.01
+#define ITERS 18
 
 /* struct to hold the parameter values */
 typedef struct
@@ -158,6 +160,8 @@ int main(int argc, char *argv[])
   char hostname[MPI_MAX_PROCESSOR_NAME];  /* character array to hold hostname running process */
   int ii,jj;             /* row and column indices for the grid */
   int kk;                /* index for looping over ranks */
+  int start_col,end_col; /* rank dependent looping indices */
+  int iter;              /* index for timestep iterations */ 
   int rank;              /* the rank of this process */
   int left;              /* the rank of the process to the left */
   int right;             /* the rank of the process to the right */
@@ -167,7 +171,9 @@ int main(int argc, char *argv[])
   int local_nrows;       /* number of rows apportioned to this rank */
   int local_ncols;       /* number of columns apportioned to this rank */
   int remote_ncols;      /* number of columns apportioned to a remote rank */
-  double *w;             /* local temperature grid at time t     */
+  double boundary_mean;  /* mean of boundary values used to initialise inner cells */
+  double **u;            /* local temperature grid at time t - 1 */
+  double **w;            /* local temperature grid at time t     */
   double *sendbuf;       /* buffer to hold values to send */
   double *recvbuf;       /* buffer to hold received values */
   double *printbuf;      /* buffer to hold values for printing */
@@ -216,13 +222,20 @@ int main(int argc, char *argv[])
   local_nrows = NROWS;
   local_ncols = calc_ncols_from_rank(rank, size);
 
-  /*
+ /*
   ** allocate space for:
-  ** - the local grid with 2 extra columns added for the halos
-  ** - message passing buffers
-  ** - a buffer used to print local grid values
+  ** - the local grid (2 extra columns added for the halos)
+  ** - we'll use local grids for current and previous timesteps
+  ** - buffers for message passing
   */
-  w = (double*)malloc(sizeof(double*) * local_nrows * (local_ncols + 2));
+  u = (double**)malloc(sizeof(double*) * local_nrows);
+  for(ii=0;ii<local_nrows;ii++) {
+    u[ii] = (double*)malloc(sizeof(double) * (local_ncols + 2));
+  }
+  w = (double**)malloc(sizeof(double*) * local_nrows);
+  for(ii=0;ii<local_nrows;ii++) {
+    w[ii] = (double*)malloc(sizeof(double) * (local_ncols + 2));
+  }
   sendbuf = (double*)malloc(sizeof(double) * local_nrows);
   recvbuf = (double*)malloc(sizeof(double) * local_nrows);
   /* The last rank has the most columns apportioned.
@@ -230,120 +243,130 @@ int main(int argc, char *argv[])
   remote_ncols = calc_ncols_from_rank(size-1, size); 
   printbuf = (double*)malloc(sizeof(double) * (remote_ncols + 2));
 
-    /*
-  ** initialize the local grid (w):
-  ** - core cells are set to the value of the rank
-  ** - halo cells are inititalised to a -ve value
+  /*
+  ** initialize the local grid for the present time (w):
+  ** - set boundary conditions for any boundaries that occur in the local grid
+  ** - initialize inner cells to the average of all boundary cells
   ** note the looping bounds for index jj is modified 
   ** to accomodate the extra halo columns
+  ** no need to initialise the halo cells at this point
   */
+  boundary_mean = ((NROWS - 2) * 100.0 * 2 + (NCOLS - 2) * 100.0) / (double) ((2 * NROWS) + (2 * NCOLS) - 4);
   for(ii=0;ii<local_nrows;ii++) {
-    for(jj=0; jj<local_ncols + 2; jj++) {
-      if (jj > 0 && jj < (local_ncols + 1)) 
-        w[ii * (local_ncols + 2) + jj] = (double)rank;                 /* core cells */
-            else if (jj == 0 || jj == (local_ncols + 1))
-        w[ii * (local_ncols + 2) + jj] = -1.0;                         /* halo cells */
+    for(jj=1;jj<local_ncols + 1;jj++) {
+      if(ii == 0)
+	w[ii][jj] = 0.0;
+      else if(ii == local_nrows-1)
+	w[ii][jj] = 100.0;
+      else if((rank == 0) && jj == 1)                  /* rank 0 gets leftmost subrid */
+	w[ii][jj] = 100.0;
+      else if((rank == size - 1) && jj == local_ncols) /* rank (size - 1) gets rightmost subrid */
+	w[ii][jj] = 100.0;
+      else
+	w[ii][jj] = boundary_mean;
     }
   }
 
+    /*
+  ** time loop
+  */
+  for(iter=0;iter<ITERS;iter++) {
+    /*
+    ** halo exchange for the local grids w:
+    ** - first send to the left and receive from the right,
+    ** - then send to the right and receive from the left.
+    ** for each direction:
+    ** - first, pack the send buffer using values from the grid
+    ** - exchange using MPI_Sendrecv()
+    ** - unpack values from the recieve buffer into the grid
+    */
+
+    /* send to the left, receive from right */
+    for(ii=0;ii<local_nrows;ii++)
+      sendbuf[ii] = w[ii][1];
+      MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, left, tag,
+      recvbuf, local_nrows, MPI_DOUBLE, right, tag,
+      MPI_COMM_WORLD, &status);
+    for(ii=0;ii<local_nrows;ii++)
+      w[ii][local_ncols + 1] = recvbuf[ii];
+
+    /* send to the right, receive from left */
+    for(ii=0;ii<local_nrows;ii++)
+      sendbuf[ii] = w[ii][local_ncols];
+    MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, right, tag,
+		 recvbuf, local_nrows, MPI_DOUBLE, left, tag,
+		 MPI_COMM_WORLD, &status);
+    for(ii=0;ii<local_nrows;ii++)
+      w[ii][0] = recvbuf[ii];
+
+    /*
+    ** copy the old solution into the u grid
+    */ 
+    for(ii=0;ii<local_nrows;ii++) {
+      for(jj=0;jj<local_ncols + 2;jj++) {
+	      u[ii][jj] = w[ii][jj];
+      }
+    }
+
+    /*
+    ** compute new values of w using u
+    ** looping extents depend on rank, as we don't
+    ** want to overwrite any boundary conditions
+    */
+    for(ii=1;ii<local_nrows-1;ii++) {
+      if(rank == 0) {
+        start_col = 2;
+        end_col = local_ncols;
+      }
+      else if(rank == size -1) {
+        start_col = 1;
+        end_col = local_ncols - 1;
+      }
+      else {
+        start_col = 1;
+        end_col = local_ncols;
+      }
+      for(jj=start_col;jj<end_col + 1;jj++) {
+	      w[ii][jj] = (u[ii - 1][jj] + u[ii + 1][jj] + u[ii][jj - 1] + u[ii][jj + 1]) / 4.0;
+      }
+    }
+  }
+  
   /*
-  ** Master rank prints out the initialised grid.
-  ** Proceeding row-by-row:
-  ** - the master rank prints it's values, including the halo
-  ** - space
-  ** - the values for rows from the other ranks are received
-  **   by the master, and printed
-  ** - ranks other than the master send their row values to the master 
+  ** at the end, write out the solution.
+  ** for each row of the grid:
+  ** - rank 0 first prints out its cell values
+  ** - then it receives row values sent from the other
+  **   ranks in order, and prints them.
   */
   if(rank == MASTER) {
     printf("NROWS: %d\nNCOLS: %d\n",NROWS,NCOLS);
-    printf("Initialised grid:\n");
+    printf("Final temperature distribution over heated plate:\n");
   }
-  for(ii=0; ii < local_nrows; ii++) {
-    if(rank == MASTER) {
-      for(jj=0; jj < local_ncols + 2; jj++) {
-	      printf("%2.1f ",w[ii * (local_ncols + 2) + jj]);
+
+  for(ii=0;ii<local_nrows;ii++) {
+    if(rank == 0) {
+      for(jj=1;jj<local_ncols + 1;jj++) {
+	      printf("%6.2f ",w[ii][jj]);
       }
-      printf(" ");
-      for(kk=1; kk < size; kk++) { /* loop over other ranks */
+      for(kk=1;kk<size;kk++) { /* loop over other ranks */
         remote_ncols = calc_ncols_from_rank(kk, size);
-        MPI_Recv(printbuf, remote_ncols + 2, MPI_DOUBLE, kk, tag, MPI_COMM_WORLD, &status);
-        for(jj=0; jj < remote_ncols + 2; jj++) {
-          printf("%2.1f ",printbuf[jj]);
-        }
-        printf(" ");
-      }
-      printf("\n");
+        MPI_Recv(printbuf,remote_ncols + 2,MPI_DOUBLE,kk,tag,MPI_COMM_WORLD,&status);
 
-    } else {
-      MPI_Send(&w[ii * (local_ncols + 2)], local_ncols + 2, MPI_DOUBLE, MASTER, tag, MPI_COMM_WORLD);
-    }
-  }
-  if (rank == MASTER)
-    printf("\n");
-
-
-   /*
-  ** halo exchange for the local grids w:
-  ** - first send to the left and receive from the right,
-  ** - then send to the right and receive from the left.
-  ** for each direction:
-  ** - first, pack the send buffer using values from the grid
-  ** - exchange using MPI_Sendrecv()
-  ** - unpack values from the recieve buffer into the grid
-  */
-
-  /* send to the left, receive from right */
-  for(ii=0; ii < local_nrows; ii++)
-    sendbuf[ii] = w[ii * (local_ncols + 2) + 1];
-    MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, left, tag,
-	       recvbuf, local_nrows, MPI_DOUBLE, right, tag,
-	       MPI_COMM_WORLD, &status);
-  for(ii=0; ii < local_nrows; ii++)
-    w[ii * (local_ncols + 2) + local_ncols + 1] = recvbuf[ii];
-  
-  /* send to the right, receive from left */
-  for(ii=0; ii < local_nrows; ii++)
-    sendbuf[ii] = w[ii * (local_ncols + 2) + local_ncols];
-    MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, right, tag, 
-        recvbuf, local_nrows, MPI_DOUBLE, left, tag,
-	       MPI_COMM_WORLD, &status);
-  for(ii=0; ii < local_nrows; ii++)
-    w[ii * (local_ncols + 2)] = recvbuf[ii];
-
-  
-  /*
-  ** Master rank prints out the grid after the halo-exchange
-  */
-  if(rank == MASTER) {
-    printf("Grid after halo-exchange.\n");
-    printf("Notice that:\n");
-    printf(" - the core cells are unchanged\n");
-    printf(" - the halo cells now have values derived\n");
-    printf("   from the core cells of neighbouring ranks\n");
-  }
-  for(ii=0; ii < local_nrows; ii++) {
-    if(rank == MASTER) {
-      for(jj=0; jj < local_ncols + 2; jj++) {
-	printf("%2.1f ",w[ii * (local_ncols + 2) + jj]);
-      }
-      printf(" ");
-      for(kk=1; kk < size; kk++) { /* loop over other ranks */
-	remote_ncols = calc_ncols_from_rank(kk, size);
-	MPI_Recv(printbuf, remote_ncols + 2, MPI_DOUBLE, kk, tag, MPI_COMM_WORLD, &status);
-	for(jj=0; jj < remote_ncols + 2; jj++) {
-	  printf("%2.1f ",printbuf[jj]);
-	}
-	printf(" ");
+	      for(jj=1;jj<remote_ncols + 1;jj++) {
+	        printf("%6.2f ",printbuf[jj]);
+	      }
       }
       printf("\n");
     }
     else {
-      MPI_Send(&w[ii * (local_ncols + 2)], local_ncols + 2, MPI_DOUBLE, MASTER, tag, MPI_COMM_WORLD);
+      MPI_Send(w[ii],local_ncols + 2,MPI_DOUBLE,MASTER,tag,MPI_COMM_WORLD);
     }
   }
-  if (rank == MASTER)
+
+  if(rank == MASTER)
     printf("\n");
+
 
   char *paramfile = NULL;                                                            /* name of the input parameter file */
   char *obstaclefile = NULL;                                                         /* name of a the input obstacle file */
@@ -418,11 +441,17 @@ int main(int argc, char *argv[])
   /* finialise the MPI enviroment */
   MPI_Finalize();
 
-  /* free up allocated memory */
+   /* free up allocated memory */
+  for(ii=0;ii<local_nrows;ii++) {
+    free(u[ii]);
+    free(w[ii]);
+  }
+  free(u);
   free(w);
   free(sendbuf);
   free(recvbuf);
   free(printbuf);
+
 
   return EXIT_SUCCESS;
 }
