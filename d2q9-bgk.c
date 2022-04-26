@@ -193,21 +193,21 @@ int main(int argc, char *argv[])
   MPI_Comm_size( MPI_COMM_WORLD, &size );
   
   /* determine the RANK of the current process [0:SIZE-1] */
-  MPI_Comm_rank( MPI_COMM_WORLD, &myrank );
+  MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
   /* 
   ** make use of these values in our print statement
   ** note that we are assuming that all processes can
   ** write to the screen
   */
-  printf("Hello, world; from host %s: process %d of %d\n", hostname, myrank, size);
+  printf("Hello, world; from host %s: process %d of %d\n", hostname, rank, size);
 
   /* 
   ** determine process ranks to the left and right of myrank
   ** respecting periodic boundary conditions
   */
-  right = (myrank + 1) % size;
-  left = (myrank == 0) ? (myrank + size - 1) : (myrank - 1);
+  right = (rank + 1) % size;
+  left = (rank == 0) ? (rank + size - 1) : (rank - 1);
 
   /* 
   ** determine local grid size
