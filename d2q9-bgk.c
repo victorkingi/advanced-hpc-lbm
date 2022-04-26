@@ -145,12 +145,19 @@ unsigned int check_power_of_2(unsigned int x) {
 int main(int argc, char *argv[])
 {
   //MPI INIT
-  int rank;               /* 'rank' of process among it's cohort */ 
   int size;               /* size of cohort, i.e. num processes started */
   int flag;               /* for checking whether MPI_Init() has been called */
   int strlen;             /* length of a character array */
   enum bool {FALSE,TRUE}; /* enumerated type: false = 0, true = 1 */  
   char hostname[MPI_MAX_PROCESSOR_NAME];  /* character array to hold hostname running process */
+  int myrank;            /* the rank of this process */
+  int left;              /* the rank of the process to the left */
+  int right;             /* the rank of the process to the right */
+  int tag = 0;           /* scope for adding extra information to a message */
+  MPI_Status status;     /* struct used by MPI_Recv */
+  char sendbuf[BUFSIZ];
+  char recvbuf[BUFSIZ];
+
 
   /* initialise our MPI environment */
   MPI_Init( &argc, &argv );
@@ -172,15 +179,38 @@ int main(int argc, char *argv[])
   MPI_Comm_size( MPI_COMM_WORLD, &size );
   
   /* determine the RANK of the current process [0:SIZE-1] */
-  MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+  MPI_Comm_rank( MPI_COMM_WORLD, &myrank );
 
   /* 
   ** make use of these values in our print statement
   ** note that we are assuming that all processes can
   ** write to the screen
   */
-  printf("Hello, world; from host %s: process %d of %d\n", hostname, rank, size);
+  printf("Hello, world; from host %s: process %d of %d\n", hostname, myrank, size);
 
+  /* 
+  ** determine process ranks to the left and right of myrank
+  ** respecting periodic boundary conditions
+  */
+  right = (myrank + 1) % size;
+  left = (myrank == 0) ? (myrank + size - 1) : (myrank - 1);
+
+  /* compose messages */
+  sprintf(sendbuf, "Message from host %s: process %d of %d\n", hostname, myrank, size);
+
+  /*
+  ** communication pattern:
+  ** we will use MPI_Sendrecv() is this case
+  ** all ranks will:
+  ** i) send to the left and receive from the right
+  ** ii) then send to the right and recieve from the left
+  */
+  MPI_Sendrecv(sendbuf, strlen(sendbuf)+1, MPI_CHAR, left, tag,
+	      recvbuf, BUFSIZ, MPI_CHAR, right, tag, MPI_COMM_WORLD, &status);
+  printf("rank %d: %s\n", myrank, recvbuf);
+  MPI_Sendrecv(sendbuf, strlen(sendbuf)+1, MPI_CHAR, right, tag,
+	      recvbuf, BUFSIZ, MPI_CHAR, left, tag, MPI_COMM_WORLD, &status);
+  printf("rank %d: %s\n", myrank, recvbuf);
 
 
   char *paramfile = NULL;                                                            /* name of the input parameter file */
