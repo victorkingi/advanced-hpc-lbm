@@ -264,15 +264,15 @@ int main(int argc, char *argv[])
   ** - buffers for message passing
   */
   u = (t_speed *)malloc(sizeof(t_speed));
-  u.speed_0 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
-  u.speed_1 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
-  u.speed_2 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
-  u.speed_3 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
-  u.speed_4 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
-  u.speed_5 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
-  u.speed_6 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
-  u.speed_7 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
-  u.speed_8 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  u->speed_0 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  u->speed_1 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  u->speed_2 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  u->speed_3 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  u->speed_4 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  u->speed_5 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  u->speed_6 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  u->speed_7 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  u->speed_8 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
 
   w = (t_speed *)malloc(sizeof(t_speed));
   w->speed_0 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
