@@ -429,7 +429,7 @@ int main(int argc, char *argv[])
         end_col = local_ncols;
       }
       for(jj=start_col;jj<end_col + 1;jj++) {
-        av_vels[iter] = timestep(params, u, w, obstacles);
+        //av_vels[iter] = timestep(params, u, w, obstacles);
         t_speed* temp = u;
         u = w;
         w = temp;
