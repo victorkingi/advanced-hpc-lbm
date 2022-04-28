@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
     /*
   ** time loop
   */
-  printf("Starting loop u size %d w size %d: process %d of %d\n", sizeof(u->speed_0), sizeof(w->speed_0), rank, size);
+  printf("Local columns: %d, local rows: %d: process %d of %d\n", local_ncols, local_nrows, rank, size);
   for(iter=0;iter < params.maxIters; iter++) {
     /*
     ** halo exchange for the local grids w:
@@ -331,6 +331,7 @@ int main(int argc, char *argv[])
     */
 
     /* send to the left, receive from right */
+    printf("New timestep %d: %d: process %d of %d\n", iter, rank, size);
     for(ii=0;ii<local_nrows;ii++) {
       _temp[0] = w->speed_0[ii + 1 * local_nrows]; //TODO should be different from 1 maybe
       _temp[1] = w->speed_1[ii + 1 * local_nrows];
@@ -349,6 +350,7 @@ int main(int argc, char *argv[])
         MPI_COMM_WORLD, &status);
       }
     }
+    printf("Sent all waiting to receive %d: %d: process %d of %d\n", sizeof(sendbuf), rank, size);
     for(ii=0;ii<local_nrows;ii++) {
       w->speed_0[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+0];
       w->speed_1[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+1];
@@ -380,7 +382,7 @@ int main(int argc, char *argv[])
         MPI_COMM_WORLD, &status);
       }
     }
-
+    printf("Sent all 2 waiting to receive %d: %d: process %d of %d\n", sizeof(sendbuf), rank, size);
     for(ii=0;ii<local_nrows;ii++) {
       w->speed_0[ii] = recvbuf[(ii*9)+0];
       w->speed_1[ii] = recvbuf[(ii*9)+1];
