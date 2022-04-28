@@ -64,7 +64,6 @@
 #define NROWS 4
 #define NCOLS 16
 #define MASTER 0
-#define EPSILON 0.01
 #define ITERS 18
 
 /* struct to hold the parameter values */
@@ -153,6 +152,43 @@ unsigned int check_power_of_2(unsigned int x) {
 */
 int main(int argc, char *argv[])
 {
+  char *paramfile = NULL;                                                            /* name of the input parameter file */
+  char *obstaclefile = NULL;                                                         /* name of a the input obstacle file */
+  t_param params;                                                                    /* struct to hold parameter values */
+  t_speed* cells = NULL;                                                             /* grid containing fluid densities */
+  t_speed* tmp_cells = NULL;                                                         /* scratch space */
+  t_speed* local_cells = NULL;
+  t_speed* local_temp_cells = NULL;
+  unsigned int* obstacles = NULL;                                                    /* grid indicating which cells are blocked */
+  float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
+  struct timeval timstr;                                                             /* structure to hold elapsed time */
+  double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
+
+  /* parse the command line */
+  if (argc != 3)
+  {
+    usage(argv[0]);
+  }
+  else
+  {
+    paramfile = argv[1];
+    obstaclefile = argv[2];
+  }
+
+  /* Total/init time starts here: initialise our data structures and load values from file */
+  gettimeofday(&timstr, NULL);
+  tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
+  init_tic = tot_tic;
+  initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
+
+  /* Init time stops here, compute time starts*/
+  gettimeofday(&timstr, NULL);
+  init_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
+  comp_tic = init_toc;
+
+  accelerate_flow(params, cells, obstacles);
+  is_power_of_2 = check_power_of_2(params.nx);
+
   //MPI INIT
   int flag;               /* for checking whether MPI_Init() has been called */
   int strlen_;             /* length of a character array */
@@ -171,12 +207,11 @@ int main(int argc, char *argv[])
   int local_nrows;       /* number of rows apportioned to this rank */
   int local_ncols;       /* number of columns apportioned to this rank */
   int remote_ncols;      /* number of columns apportioned to a remote rank */
-  double boundary_mean;  /* mean of boundary values used to initialise inner cells */
-  double **u;            /* local temperature grid at time t - 1 */
-  double **w;            /* local temperature grid at time t     */
-  double *sendbuf;       /* buffer to hold values to send */
-  double *recvbuf;       /* buffer to hold received values */
-  double *printbuf;      /* buffer to hold values for printing */
+  t_speed *u;            /* local temperature grid at time t - 1 */
+  t_speed *w;            /* local temperature grid at time t     */
+  float *sendbuf;       /* buffer to hold values to send */
+  float *recvbuf;       /* buffer to hold received values */
+  float *printbuf;      /* buffer to hold values for printing */
 
 
   /* initialise our MPI environment */
@@ -219,8 +254,8 @@ int main(int argc, char *argv[])
   ** determine local grid size
   ** each rank gets all the rows, but a subset of the number of columns
   */
-  local_nrows = NROWS;
-  local_ncols = calc_ncols_from_rank(rank, size);
+  local_nrows = params.nx;
+  local_ncols = calc_ncols_from_rank(params, rank, size);
 
  /*
   ** allocate space for:
@@ -228,49 +263,60 @@ int main(int argc, char *argv[])
   ** - we'll use local grids for current and previous timesteps
   ** - buffers for message passing
   */
-  u = (double**)malloc(sizeof(double*) * local_nrows);
-  for(ii=0;ii<local_nrows;ii++) {
-    u[ii] = (double*)malloc(sizeof(double) * (local_ncols + 2));
-  }
-  w = (double**)malloc(sizeof(double*) * local_nrows);
-  for(ii=0;ii<local_nrows;ii++) {
-    w[ii] = (double*)malloc(sizeof(double) * (local_ncols + 2));
-  }
-  sendbuf = (double*)malloc(sizeof(double) * local_nrows);
-  recvbuf = (double*)malloc(sizeof(double) * local_nrows);
+  *u = (t_speed *)malloc(sizeof(t_speed));
+  (*u)->speed_0 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*u)->speed_1 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*u)->speed_2 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*u)->speed_3 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*u)->speed_4 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*u)->speed_5 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*u)->speed_6 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*u)->speed_7 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*u)->speed_8 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+
+  *w = (t_speed *)malloc(sizeof(t_speed));
+  (*w)->speed_0 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*w)->speed_1 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*w)->speed_2 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*w)->speed_3 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*w)->speed_4 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*w)->speed_5 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*w)->speed_6 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*w)->speed_7 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+  (*w)->speed_8 = (float *)_mm_malloc(sizeof(float) * ((local_ncols + 2) * local_nrows), 64);
+
+  sendbuf = (float *)malloc(sizeof(float) * local_nrows * 9);
+  recvbuf = (float *)malloc(sizeof(float) * local_nrows * 9);
   /* The last rank has the most columns apportioned.
      printbuf must be big enough to hold this number */ 
   remote_ncols = calc_ncols_from_rank(size-1, size); 
-  printbuf = (double*)malloc(sizeof(double) * (remote_ncols + 2));
+  printbuf = (float*)malloc(sizeof(float) * local_nrows * (remote_ncols + 2) * 9);
 
   /*
   ** initialize the local grid for the present time (w):
   ** - set boundary conditions for any boundaries that occur in the local grid
-  ** - initialize inner cells to the average of all boundary cells
   ** note the looping bounds for index jj is modified 
   ** to accomodate the extra halo columns
   ** no need to initialise the halo cells at this point
   */
-  boundary_mean = ((NROWS - 2) * 100.0 * 2 + (NCOLS - 2) * 100.0) / (double) ((2 * NROWS) + (2 * NCOLS) - 4);
   for(ii=0;ii<local_nrows;ii++) {
     for(jj=1;jj<local_ncols + 1;jj++) {
-      if(ii == 0)
-	w[ii][jj] = 0.0;
-      else if(ii == local_nrows-1)
-	w[ii][jj] = 100.0;
-      else if((rank == 0) && jj == 1)                  /* rank 0 gets leftmost subrid */
-	w[ii][jj] = 100.0;
-      else if((rank == size - 1) && jj == local_ncols) /* rank (size - 1) gets rightmost subrid */
-	w[ii][jj] = 100.0;
-      else
-	w[ii][jj] = boundary_mean;
+        (*w)->speed_0[ii + jj * local_nrows] = cells->speed_0[ii + jj * params->nx];
+        (*w)->speed_1[ii + jj * local_nrows] = cells->speed_1[ii + jj * params->nx];
+        (*w)->speed_2[ii + jj * local_nrows] = cells->speed_2[ii + jj * params->nx];
+        (*w)->speed_3[ii + jj * local_nrows] = cells->speed_3[ii + jj * params->nx];
+        (*w)->speed_4[ii + jj * local_nrows] = cells->speed_4[ii + jj * params->nx];
+        (*w)->speed_5[ii + jj * local_nrows] = cells->speed_5[ii + jj * params->nx];
+        (*w)->speed_6[ii + jj * local_nrows] = cells->speed_6[ii + jj * params->nx];
+        (*w)->speed_7[ii + jj * local_nrows] = cells->speed_7[ii + jj * params->nx];
+        (*w)->speed_8[ii + jj * local_nrows] = cells->speed_8[ii + jj * params->nx];
     }
   }
 
     /*
   ** time loop
   */
-  for(iter=0;iter<ITERS;iter++) {
+  for(iter=0;iter < params.maxIters; iter++) {
     /*
     ** halo exchange for the local grids w:
     ** - first send to the left and receive from the right,
@@ -283,28 +329,81 @@ int main(int argc, char *argv[])
 
     /* send to the left, receive from right */
     for(ii=0;ii<local_nrows;ii++)
-      sendbuf[ii] = w[ii][1];
-      MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, left, tag,
-      recvbuf, local_nrows, MPI_DOUBLE, right, tag,
-      MPI_COMM_WORLD, &status);
+      float *temp; // need to pack all 9 speeds to one array 
+      
+      temp[0] = w->speed_0[ii + 1 * local_nrows]; //TODO should be different from 1 maybe
+      temp[1] = w->speed_1[ii + 1 * local_nrows];
+      temp[2] = w->speed_2[ii + 1 * local_nrows];
+      temp[3] = w->speed_3[ii + 1 * local_nrows];
+      temp[4] = w->speed_4[ii + 1 * local_nrows];
+      temp[5] = w->speed_5[ii + 1 * local_nrows];
+      temp[6] = w->speed_6[ii + 1 * local_nrows];
+      temp[7] = w->speed_7[ii + 1 * local_nrows];
+      temp[8] = w->speed_8[ii + 1 * local_nrows];
+
+      for (int p = 0; p < 9; p++) {
+        sendbuf[ii] = temp[i];
+        MPI_Sendrecv(sendbuf, local_nrows*9, MPI_FLOAT, left, tag,
+        recvbuf, local_nrows*9, MPI_FLOAT, right, tag,
+        MPI_COMM_WORLD, &status);
+      }
     for(ii=0;ii<local_nrows;ii++)
-      w[ii][local_ncols + 1] = recvbuf[ii];
+      w->speed_0[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+0];
+      w->speed_1[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+1];
+      w->speed_2[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+2];
+      w->speed_3[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+3];
+      w->speed_4[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+4];
+      w->speed_5[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+5];
+      w->speed_6[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+6];
+      w->speed_7[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+7];
+      w->speed_8[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+8];
 
     /* send to the right, receive from left */
     for(ii=0;ii<local_nrows;ii++)
-      sendbuf[ii] = w[ii][local_ncols];
-    MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, right, tag,
-		 recvbuf, local_nrows, MPI_DOUBLE, left, tag,
-		 MPI_COMM_WORLD, &status);
+      float *temp; // need to pack all 9 speeds to one array 
+      
+      temp[0] = w->speed_0[ii + local_ncols * local_nrows]; //TODO should be different from 1 maybe
+      temp[1] = w->speed_1[ii + local_ncols * local_nrows];
+      temp[2] = w->speed_2[ii + local_ncols * local_nrows];
+      temp[3] = w->speed_3[ii + local_ncols * local_nrows];
+      temp[4] = w->speed_4[ii + local_ncols * local_nrows];
+      temp[5] = w->speed_5[ii + local_ncols * local_nrows];
+      temp[6] = w->speed_6[ii + local_ncols * local_nrows];
+      temp[7] = w->speed_7[ii + local_ncols * local_nrows];
+      temp[8] = w->speed_8[ii + local_ncols * local_nrows];
+
+      for (int p = 0; p < 9; p++) {
+        sendbuf[ii] = temp[i];
+        MPI_Sendrecv(sendbuf, local_nrows*9, MPI_FLOAT, left, tag,
+        recvbuf, local_nrows*9, MPI_FLOAT, right, tag,
+        MPI_COMM_WORLD, &status);
+      }
+
     for(ii=0;ii<local_nrows;ii++)
-      w[ii][0] = recvbuf[ii];
+      w->speed_0[ii] = recvbuf[(ii*9)+0];
+      w->speed_1[ii] = recvbuf[(ii*9)+1];
+      w->speed_2[ii] = recvbuf[(ii*9)+2];
+      w->speed_3[ii] = recvbuf[(ii*9)+3];
+      w->speed_4[ii] = recvbuf[(ii*9)+4];
+      w->speed_5[ii] = recvbuf[(ii*9)+5];
+      w->speed_6[ii] = recvbuf[(ii*9)+6];
+      w->speed_7[ii] = recvbuf[(ii*9)+7];
+      w->speed_8[ii] = recvbuf[(ii*9)+8];
 
     /*
     ** copy the old solution into the u grid
     */ 
     for(ii=0;ii<local_nrows;ii++) {
       for(jj=0;jj<local_ncols + 2;jj++) {
-	      u[ii][jj] = w[ii][jj];
+        u->speed_0[ii + jj*(local_ncols + 2)] = w->speed_0[ii + jj*(local_ncols + 2)]
+        u->speed_1[ii + jj*(local_ncols + 2)] = w->speed_1[ii + jj*(local_ncols + 2)]
+        u->speed_2[ii + jj*(local_ncols + 2)] = w->speed_2[ii + jj*(local_ncols + 2)]
+        u->speed_3[ii + jj*(local_ncols + 2)] = w->speed_3[ii + jj*(local_ncols + 2)]
+        u->speed_4[ii + jj*(local_ncols + 2)] = w->speed_4[ii + jj*(local_ncols + 2)]
+        u->speed_5[ii + jj*(local_ncols + 2)] = w->speed_5[ii + jj*(local_ncols + 2)]
+        u->speed_6[ii + jj*(local_ncols + 2)] = w->speed_6[ii + jj*(local_ncols + 2)]
+        u->speed_7[ii + jj*(local_ncols + 2)] = w->speed_7[ii + jj*(local_ncols + 2)]
+        u->speed_8[ii + jj*(local_ncols + 2)] = w->speed_8[ii + jj*(local_ncols + 2)]
       }
     }
 
@@ -327,7 +426,15 @@ int main(int argc, char *argv[])
         end_col = local_ncols;
       }
       for(jj=start_col;jj<end_col + 1;jj++) {
-	      w[ii][jj] = (u[ii - 1][jj] + u[ii + 1][jj] + u[ii][jj - 1] + u[ii][jj + 1]) / 4.0;
+        av_vels[iter] = timestep(params, u, w, obstacles);
+        t_speed* temp = u;
+        u = w;
+        w = temp;
+        #ifdef DEBUG
+            printf("==timestep: %d==\n", iter);
+            printf("av velocity: %.12E\n", av_vels[iter]);
+            printf("tot density: %.12E\n", total_density(params, cells));
+        #endif
       }
     }
   }
@@ -340,18 +447,18 @@ int main(int argc, char *argv[])
   **   ranks in order, and prints them.
   */
   if(rank == MASTER) {
-    printf("NROWS: %d\nNCOLS: %d\n",NROWS,NCOLS);
+   // printf("NROWS: %d\nNCOLS: %d\n",NROWS,NCOLS);
     printf("Final temperature distribution over heated plate:\n");
   }
 
-  for(ii=0;ii<local_nrows;ii++) {
+  /*for(ii=0;ii<local_nrows;ii++) {
     if(rank == 0) {
       for(jj=1;jj<local_ncols + 1;jj++) {
 	      printf("%6.2f ",w[ii][jj]);
       }
-      for(kk=1;kk<size;kk++) { /* loop over other ranks */
+      for(kk=1;kk<size;kk++) {  loop over other ranks 
         remote_ncols = calc_ncols_from_rank(kk, size);
-        MPI_Recv(printbuf,remote_ncols + 2,MPI_DOUBLE,kk,tag,MPI_COMM_WORLD,&status);
+        MPI_Recv(printbuf,remote_ncols + 2,MPI_FLOAT,kk,tag,MPI_COMM_WORLD,&status);
 
 	      for(jj=1;jj<remote_ncols + 1;jj++) {
 	        printf("%6.2f ",printbuf[jj]);
@@ -360,61 +467,12 @@ int main(int argc, char *argv[])
       printf("\n");
     }
     else {
-      MPI_Send(w[ii],local_ncols + 2,MPI_DOUBLE,MASTER,tag,MPI_COMM_WORLD);
+      MPI_Send(w[ii],local_ncols + 2,MPI_FLOAT,MASTER,tag,MPI_COMM_WORLD);
     }
-  }
+  } */
 
   if(rank == MASTER)
     printf("\n");
-
-
-  char *paramfile = NULL;                                                            /* name of the input parameter file */
-  char *obstaclefile = NULL;                                                         /* name of a the input obstacle file */
-  t_param params;                                                                    /* struct to hold parameter values */
-  t_speed* cells = NULL;                                                             /* grid containing fluid densities */
-  t_speed* tmp_cells = NULL;                                                         /* scratch space */
-  unsigned int* obstacles = NULL;                                                    /* grid indicating which cells are blocked */
-  float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
-  struct timeval timstr;                                                             /* structure to hold elapsed time */
-  double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
-
-  /* parse the command line */
-  if (argc != 3)
-  {
-    usage(argv[0]);
-  }
-  else
-  {
-    paramfile = argv[1];
-    obstaclefile = argv[2];
-  }
-
-  /* Total/init time starts here: initialise our data structures and load values from file */
-  gettimeofday(&timstr, NULL);
-  tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
-  init_tic = tot_tic;
-  initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
-
-  /* Init time stops here, compute time starts*/
-  gettimeofday(&timstr, NULL);
-  init_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
-  comp_tic = init_toc;
-
-  accelerate_flow(params, cells, obstacles);
-  is_power_of_2 = check_power_of_2(params.nx);
-
-  for (int tt = 0; tt < params.maxIters; tt++)
-  {
-    av_vels[tt] = timestep(params, cells, tmp_cells, obstacles);
-    t_speed* temp = cells;
-    cells = tmp_cells;
-    tmp_cells = temp;
-#ifdef DEBUG
-    printf("==timestep: %d==\n", tt);
-    printf("av velocity: %.12E\n", av_vels[tt]);
-    printf("tot density: %.12E\n", total_density(params, cells));
-#endif
-  }
 
   /* Compute time stops here, collate time starts*/
   gettimeofday(&timstr, NULL);
@@ -456,14 +514,14 @@ int main(int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
-int calc_ncols_from_rank(int rank, int size)
+int calc_ncols_from_rank(const t_param params, int rank, int size)
 {
   int ncols;
 
-  ncols = NCOLS / size;       /* integer division */
-  if ((NCOLS % size) != 0) {  /* if there is a remainder */
+  ncols = params.ny / size;       /* integer division */
+  if ((params.ny % size) != 0) {  /* if there is a remainder */
     if (rank == size - 1)
-      ncols += NCOLS % size;  /* add remainder to last rank */
+      ncols += params.ny % size;  /* add remainder to last rank */
   }
   
   return ncols;
@@ -538,7 +596,6 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume((params.nx)%2==0);
   __assume((params.ny)%2==0);
 
-  #pragma omp simd reduction(+:tot_cells, tot_u)
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
@@ -548,8 +605,8 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       unsigned int x_e = (ii+1 == params.nx) ? 0 : (ii+1);
       unsigned int y_s = (jj == 0) ? (params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (params.nx - 1) : (ii - 1);
-      __assume(y_n < 128);
-      __assume(x_e < 128);
+      __assume(y_n < params.ny);
+      __assume(x_e < params.nx);
       __assume(y_s < params.ny - 1);
       __assume(x_w < params.nx - 1);
 
