@@ -499,11 +499,6 @@ int main(int argc, char *argv[])
   /* finialise the MPI enviroment */
   MPI_Finalize();
 
-   /* free up allocated memory */
-  for(ii=0;ii<local_nrows;ii++) {
-    free(u[ii]);
-    free(w[ii]);
-  }
   free(u);
   free(w);
   free(sendbuf);
