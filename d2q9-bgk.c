@@ -449,32 +449,56 @@ int main(int argc, char *argv[])
   **   ranks in order, and prints them.
   */
   if(rank == MASTER) {
-   // printf("NROWS: %d\nNCOLS: %d\n",NROWS,NCOLS);
-    printf("Final temperature distribution over heated plate:\n");
+    printf("NROWS: %d\nNCOLS: %d\n",local_nrows,local_ncols);
   }
 
-  /*for(ii=0;ii<local_nrows;ii++) {
+  for(ii=0;ii<local_nrows;ii++) {
     if(rank == 0) {
       for(jj=1;jj<local_ncols + 1;jj++) {
-	      printf("%6.2f ",w[ii][jj]);
+        cells->speed_0[ii + jj*params.nx] = w->speed_0[ii + jj*(local_ncols + 2)];
+        cells->speed_1[ii + jj*params.nx] = w->speed_1[ii + jj*(local_ncols + 2)];
+        cells->speed_2[ii + jj*params.nx] = w->speed_2[ii + jj*(local_ncols + 2)];
+        cells->speed_3[ii + jj*params.nx] = w->speed_3[ii + jj*(local_ncols + 2)];
+        cells->speed_4[ii + jj*params.nx] = w->speed_4[ii + jj*(local_ncols + 2)];
+        cells->speed_5[ii + jj*params.nx] = w->speed_5[ii + jj*(local_ncols + 2)];
+        cells->speed_6[ii + jj*params.nx] = w->speed_6[ii + jj*(local_ncols + 2)];
+        cells->speed_7[ii + jj*params.nx] = w->speed_7[ii + jj*(local_ncols + 2)];
+        cells->speed_8[ii + jj*params.nx] = w->speed_8[ii + jj*(local_ncols + 2)];
       }
-      for(kk=1;kk<size;kk++) {  loop over other ranks 
+      for(kk=1;kk<size;kk++) {  // loop over other ranks 
         remote_ncols = calc_ncols_from_rank(kk, size);
-        MPI_Recv(printbuf,remote_ncols + 2,MPI_FLOAT,kk,tag,MPI_COMM_WORLD,&status);
+        MPI_Recv(printbuf,(remote_ncols + 2) * local_nrows * 9,MPI_FLOAT,kk,tag,MPI_COMM_WORLD,&status);
 
-	      for(jj=1;jj<remote_ncols + 1;jj++) {
-	        printf("%6.2f ",printbuf[jj]);
+	      for(jj=1; jj<remote_ncols + 1; jj++) {
+          cells->speed_0[ii + (local_ncols+jj)*params.nx] = printbuf[0][jj];
+          cells->speed_1[ii + (local_ncols+jj)*params.nx] = printbuf[1][jj];
+          cells->speed_2[ii + (local_ncols+jj)*params.nx] = printbuf[2][jj];
+          cells->speed_3[ii + (local_ncols+jj)*params.nx] = printbuf[3][jj];
+          cells->speed_4[ii + (local_ncols+jj)*params.nx] = printbuf[4][jj];
+          cells->speed_5[ii + (local_ncols+jj)*params.nx] = printbuf[5][jj];
+          cells->speed_6[ii + (local_ncols+jj)*params.nx] = printbuf[6][jj];
+          cells->speed_7[ii + (local_ncols+jj)*params.nx] = printbuf[7][jj];
+          cells->speed_8[ii + (local_ncols+jj)*params.nx] = printbuf[8][jj];
 	      }
       }
       printf("\n");
     }
-    else {
-      MPI_Send(w[ii],local_ncols + 2,MPI_FLOAT,MASTER,tag,MPI_COMM_WORLD);
-    }
-  } */
+  }
+  if (rank != 0) {
+     float sendArr[NSPEEDS];
 
-  if(rank == MASTER)
-    printf("\n");
+      sendArr[0] = w->speed_0;
+      sendArr[1] = w->speed_1;
+      sendArr[2] = w->speed_2;
+      sendArr[3] = w->speed_3;
+      sendArr[4] = w->speed_4;
+      sendArr[5] = w->speed_5;
+      sendArr[6] = w->speed_6;
+      sendArr[7] = w->speed_7;
+      sendArr[8] = w->speed_8;
+
+      MPI_Send(sendArr, (local_ncols + 2) * local_nrows * 9, MPI_FLOAT, MASTER, tag, MPI_COMM_WORLD);
+  }
 
   /* Compute time stops here, collate time starts*/
   gettimeofday(&timstr, NULL);
