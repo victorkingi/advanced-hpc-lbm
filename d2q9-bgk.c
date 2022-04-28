@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
     /*
   ** time loop
   */
-  printf("Starting loop u size %d w size %d: process %d of %d\n", sizeof(u), sizeof(w), rank, size);
+  printf("Starting loop u size %d w size %d: process %d of %d\n", sizeof(u->speed_0), sizeof(w->speed_0), rank, size);
   for(iter=0;iter < params.maxIters; iter++) {
     /*
     ** halo exchange for the local grids w:
