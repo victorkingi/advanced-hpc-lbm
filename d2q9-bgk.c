@@ -395,15 +395,15 @@ int main(int argc, char *argv[])
     */ 
     for(ii=0;ii<local_nrows;ii++) {
       for(jj=0;jj<local_ncols + 2;jj++) {
-        u->speed_0[ii + jj*(local_ncols + 2)] = w->speed_0[ii + jj*(local_ncols + 2)]
-        u->speed_1[ii + jj*(local_ncols + 2)] = w->speed_1[ii + jj*(local_ncols + 2)]
-        u->speed_2[ii + jj*(local_ncols + 2)] = w->speed_2[ii + jj*(local_ncols + 2)]
-        u->speed_3[ii + jj*(local_ncols + 2)] = w->speed_3[ii + jj*(local_ncols + 2)]
-        u->speed_4[ii + jj*(local_ncols + 2)] = w->speed_4[ii + jj*(local_ncols + 2)]
-        u->speed_5[ii + jj*(local_ncols + 2)] = w->speed_5[ii + jj*(local_ncols + 2)]
-        u->speed_6[ii + jj*(local_ncols + 2)] = w->speed_6[ii + jj*(local_ncols + 2)]
-        u->speed_7[ii + jj*(local_ncols + 2)] = w->speed_7[ii + jj*(local_ncols + 2)]
-        u->speed_8[ii + jj*(local_ncols + 2)] = w->speed_8[ii + jj*(local_ncols + 2)]
+        u->speed_0[ii + jj*(local_ncols + 2)] = w->speed_0[ii + jj*(local_ncols + 2)];
+        u->speed_1[ii + jj*(local_ncols + 2)] = w->speed_1[ii + jj*(local_ncols + 2)];
+        u->speed_2[ii + jj*(local_ncols + 2)] = w->speed_2[ii + jj*(local_ncols + 2)];
+        u->speed_3[ii + jj*(local_ncols + 2)] = w->speed_3[ii + jj*(local_ncols + 2)];
+        u->speed_4[ii + jj*(local_ncols + 2)] = w->speed_4[ii + jj*(local_ncols + 2)];
+        u->speed_5[ii + jj*(local_ncols + 2)] = w->speed_5[ii + jj*(local_ncols + 2)];
+        u->speed_6[ii + jj*(local_ncols + 2)] = w->speed_6[ii + jj*(local_ncols + 2)];
+        u->speed_7[ii + jj*(local_ncols + 2)] = w->speed_7[ii + jj*(local_ncols + 2)];
+        u->speed_8[ii + jj*(local_ncols + 2)] = w->speed_8[ii + jj*(local_ncols + 2)];
       }
     }
 
