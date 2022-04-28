@@ -313,6 +313,8 @@ int main(int argc, char *argv[])
     }
   }
 
+  float _temp[NSPEEDS]; // need to pack all 9 speeds to one array 
+
     /*
   ** time loop
   */
@@ -328,18 +330,16 @@ int main(int argc, char *argv[])
     */
 
     /* send to the left, receive from right */
-    for(ii=0;ii<local_nrows;ii++)
-      float temp[NSPEEDS]; // need to pack all 9 speeds to one array 
-      
-      temp[0] = w->speed_0[ii + 1 * local_nrows]; //TODO should be different from 1 maybe
-      temp[1] = w->speed_1[ii + 1 * local_nrows];
-      temp[2] = w->speed_2[ii + 1 * local_nrows];
-      temp[3] = w->speed_3[ii + 1 * local_nrows];
-      temp[4] = w->speed_4[ii + 1 * local_nrows];
-      temp[5] = w->speed_5[ii + 1 * local_nrows];
-      temp[6] = w->speed_6[ii + 1 * local_nrows];
-      temp[7] = w->speed_7[ii + 1 * local_nrows];
-      temp[8] = w->speed_8[ii + 1 * local_nrows];
+    for(ii=0;ii<local_nrows;ii++) {
+      _temp[0] = w->speed_0[ii + 1 * local_nrows]; //TODO should be different from 1 maybe
+      _temp[1] = w->speed_1[ii + 1 * local_nrows];
+      _temp[2] = w->speed_2[ii + 1 * local_nrows];
+      _temp[3] = w->speed_3[ii + 1 * local_nrows];
+      _temp[4] = w->speed_4[ii + 1 * local_nrows];
+      _temp[5] = w->speed_5[ii + 1 * local_nrows];
+      _temp[6] = w->speed_6[ii + 1 * local_nrows];
+      _temp[7] = w->speed_7[ii + 1 * local_nrows];
+      _temp[8] = w->speed_8[ii + 1 * local_nrows];
 
       for (int p = 0; p < 9; p++) {
         sendbuf[ii] = temp[p];
@@ -347,7 +347,8 @@ int main(int argc, char *argv[])
         recvbuf, local_nrows*9, MPI_FLOAT, right, tag,
         MPI_COMM_WORLD, &status);
       }
-    for(ii=0;ii<local_nrows;ii++)
+    }
+    for(ii=0;ii<local_nrows;ii++) {
       w->speed_0[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+0];
       w->speed_1[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+1];
       w->speed_2[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+2];
@@ -357,20 +358,19 @@ int main(int argc, char *argv[])
       w->speed_6[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+6];
       w->speed_7[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+7];
       w->speed_8[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+8];
+    }
 
     /* send to the right, receive from left */
-    for(ii=0;ii<local_nrows;ii++)
-      float temp[NSPEEDS]; // need to pack all 9 speeds to one array 
-      
-      temp[0] = w->speed_0[ii + local_ncols * local_nrows]; //TODO should be different from 1 maybe
-      temp[1] = w->speed_1[ii + local_ncols * local_nrows];
-      temp[2] = w->speed_2[ii + local_ncols * local_nrows];
-      temp[3] = w->speed_3[ii + local_ncols * local_nrows];
-      temp[4] = w->speed_4[ii + local_ncols * local_nrows];
-      temp[5] = w->speed_5[ii + local_ncols * local_nrows];
-      temp[6] = w->speed_6[ii + local_ncols * local_nrows];
-      temp[7] = w->speed_7[ii + local_ncols * local_nrows];
-      temp[8] = w->speed_8[ii + local_ncols * local_nrows];
+    for(ii=0;ii<local_nrows;ii++) {
+      _temp[0] = w->speed_0[ii + local_ncols * local_nrows]; //TODO should be different from 1 maybe
+      _temp[1] = w->speed_1[ii + local_ncols * local_nrows];
+      _temp[2] = w->speed_2[ii + local_ncols * local_nrows];
+      _temp[3] = w->speed_3[ii + local_ncols * local_nrows];
+      _temp[4] = w->speed_4[ii + local_ncols * local_nrows];
+      _temp[5] = w->speed_5[ii + local_ncols * local_nrows];
+      _temp[6] = w->speed_6[ii + local_ncols * local_nrows];
+      _temp[7] = w->speed_7[ii + local_ncols * local_nrows];
+      _temp[8] = w->speed_8[ii + local_ncols * local_nrows];
 
       for (int p = 0; p < 9; p++) {
         sendbuf[ii] = temp[p];
@@ -378,8 +378,9 @@ int main(int argc, char *argv[])
         recvbuf, local_nrows*9, MPI_FLOAT, right, tag,
         MPI_COMM_WORLD, &status);
       }
+    }
 
-    for(ii=0;ii<local_nrows;ii++)
+    for(ii=0;ii<local_nrows;ii++) {
       w->speed_0[ii] = recvbuf[(ii*9)+0];
       w->speed_1[ii] = recvbuf[(ii*9)+1];
       w->speed_2[ii] = recvbuf[(ii*9)+2];
@@ -389,6 +390,7 @@ int main(int argc, char *argv[])
       w->speed_6[ii] = recvbuf[(ii*9)+6];
       w->speed_7[ii] = recvbuf[(ii*9)+7];
       w->speed_8[ii] = recvbuf[(ii*9)+8];
+    }
 
     /*
     ** copy the old solution into the u grid
