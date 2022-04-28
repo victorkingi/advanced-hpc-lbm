@@ -331,7 +331,7 @@ int main(int argc, char *argv[])
     */
 
     /* send to the left, receive from right */
-    printf("New timestep %d: %d: process %d of %d\n", iter, rank, size);
+    printf("New timestep %d: process %d of %d\n", iter, rank, size);
     for(ii=0;ii<local_nrows;ii++) {
       _temp[0] = w->speed_0[ii + 1 * local_nrows]; //TODO should be different from 1 maybe
       _temp[1] = w->speed_1[ii + 1 * local_nrows];
@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
         MPI_COMM_WORLD, &status);
       }
     }
-    printf("Sent all waiting to receive %d: %d: process %d of %d\n", sizeof(sendbuf), rank, size);
+    printf("Sent all waiting to receive %d: process %d of %d\n", sizeof(sendbuf), rank, size);
     for(ii=0;ii<local_nrows;ii++) {
       w->speed_0[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+0];
       w->speed_1[ii + (local_ncols + 1) * local_nrows] = recvbuf[(ii*9)+1];
@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
         MPI_COMM_WORLD, &status);
       }
     }
-    printf("Sent all 2 waiting to receive %d: %d: process %d of %d\n", sizeof(sendbuf), rank, size);
+    printf("Sent all 2 waiting to receive %d: process %d of %d\n", sizeof(sendbuf), rank, size);
     for(ii=0;ii<local_nrows;ii++) {
       w->speed_0[ii] = recvbuf[(ii*9)+0];
       w->speed_1[ii] = recvbuf[(ii*9)+1];
