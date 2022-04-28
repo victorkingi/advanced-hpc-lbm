@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
       temp[8] = w->speed_8[ii + 1 * local_nrows];
 
       for (int p = 0; p < 9; p++) {
-        sendbuf[ii] = temp[i];
+        sendbuf[ii] = temp[p];
         MPI_Sendrecv(sendbuf, local_nrows*9, MPI_FLOAT, left, tag,
         recvbuf, local_nrows*9, MPI_FLOAT, right, tag,
         MPI_COMM_WORLD, &status);
@@ -373,7 +373,7 @@ int main(int argc, char *argv[])
       temp[8] = w->speed_8[ii + local_ncols * local_nrows];
 
       for (int p = 0; p < 9; p++) {
-        sendbuf[ii] = temp[i];
+        sendbuf[ii] = temp[p];
         MPI_Sendrecv(sendbuf, local_nrows*9, MPI_FLOAT, left, tag,
         recvbuf, local_nrows*9, MPI_FLOAT, right, tag,
         MPI_COMM_WORLD, &status);
