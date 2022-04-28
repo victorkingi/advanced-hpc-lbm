@@ -318,7 +318,7 @@ int main(int argc, char *argv[])
     /*
   ** time loop
   */
-  printf("Starting loop: process %d of %d\n", hostname, rank, size);
+  printf("Starting loop: process %d of %d\n", rank, size);
   for(iter=0;iter < params.maxIters; iter++) {
     /*
     ** halo exchange for the local grids w:
