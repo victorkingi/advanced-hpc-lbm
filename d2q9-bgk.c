@@ -485,7 +485,7 @@ int main(int argc, char *argv[])
     }
   }
   if (rank != 0) {
-     float sendArr[NSPEEDS];
+     float *sendArr[NSPEEDS];
 
       sendArr[0] = w->speed_0;
       sendArr[1] = w->speed_1;
