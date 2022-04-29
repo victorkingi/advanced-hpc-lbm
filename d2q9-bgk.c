@@ -55,6 +55,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include "mpi.h"
 
 #define NSPEEDS 9
 #define FINALSTATEFILE "final_state.dat"
@@ -153,6 +154,18 @@ int main(int argc, char *argv[])
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
 
+  int rank;              /* the rank of this process */
+  int left;              /* the rank of the process to the left */
+  int right;             /* the rank of the process to the right */
+  int size;              /* number of processes in the communicator */
+  int tag = 0;           /* scope for adding extra information to a message */
+  MPI_Status status;     /* struct used by MPI_Recv */
+  int start_col,end_col; /* rank dependent looping indices */
+  int flag;               /* for checking whether MPI_Init() has been called */
+  int strlen_;             /* length of a character array */
+  enum bool {FALSE,TRUE}; /* enumerated type: false = 0, true = 1 */  
+  char hostname[MPI_MAX_PROCESSOR_NAME];  /* character array to hold hostname running process */
+
   /* parse the command line */
   if (argc != 3)
   {
@@ -164,11 +177,29 @@ int main(int argc, char *argv[])
     obstaclefile = argv[2];
   }
 
+  MPI_Init( &argc, &argv );
+  MPI_Initialized(&flag);
+  if ( flag != TRUE ) {
+    MPI_Abort(MPI_COMM_WORLD,EXIT_FAILURE);
+  }
+
+  MPI_Get_processor_name(hostname,&strlen_);
+  MPI_Comm_size( MPI_COMM_WORLD, &size );
+  MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+
+  right = (rank + 1) % size;
+  left = (rank == 0) ? (rank + size - 1) : (rank - 1);
+
+
   /* Total/init time starts here: initialise our data structures and load values from file */
   gettimeofday(&timstr, NULL);
   tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   init_tic = tot_tic;
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
+
+  int local_nrows = params.nx;
+  int local_ncols = calc_ncols_from_rank(params, rank, size);
+  printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", local_ncols, local_nrows, hostname, rank, size);
 
   /* Init time stops here, compute time starts*/
   gettimeofday(&timstr, NULL);
@@ -286,7 +317,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume((params.nx)%2==0);
   __assume((params.ny)%2==0);
 
-  #pragma omp simd collapse(2) reduction(+:tot_cells, tot_u)
+  #pragma omp simd reduction(+:tot_cells, tot_u)
   for (int jj = 0; jj < params.ny; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
