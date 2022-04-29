@@ -415,8 +415,8 @@ int main(int argc, char *argv[])
   gettimeofday(&timstr, NULL);
   comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   col_tic = comp_toc;
-  float *global_tot_cells_each_timestep;
-  float *global_tot_u_each_timestep;
+  float *global_tot_cells_each_timestep = (float *)malloc(sizeof(float) * params.maxIters);
+  float *global_tot_u_each_timestep = (float *)malloc(sizeof(float) * params.maxIters);
 
   MPI_Reduce(local_tot_cells, global_tot_cells_each_timestep, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
