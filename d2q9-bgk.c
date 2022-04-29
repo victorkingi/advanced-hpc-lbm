@@ -463,7 +463,6 @@ int main(int argc, char *argv[])
     printf("Elapsed Collate time:\t\t\t%.6lf (s)\n", col_toc - col_tic);
     printf("Elapsed Total time:\t\t\t%.6lf (s)\n", tot_toc - tot_tic);
     write_values(params, cells, obstacles, global_av_vels);
-    finalise(&params, &cells, &tmp_cells, &obstacles, &global_av_vels);
 
   } else {
     for (int col = start_col; col < end_col; col++) {
@@ -483,6 +482,17 @@ int main(int argc, char *argv[])
   }
 
   MPI_Finalize();
+  finalise(&params, &cells, &tmp_cells, &obstacles, &global_av_vels);
+  free(sendbuf);
+  free(recvbuf);
+  free(collate_buf);
+  free(av_vels);
+  free(ranks);
+  av_vels = NULL;
+  sendbuf = NULL;
+  recvbuf = NULL;
+  collate_buf = NULL;
+  ranks = NULL;
 
   return EXIT_SUCCESS;
 }
