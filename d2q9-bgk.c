@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
-    printf("total_cells %d\n", local_tot_cells[0]);
+    
     /*
     ** halo exchange for the local grids:
     ** - first send to the left and receive from the right,
@@ -410,6 +410,7 @@ int main(int argc, char *argv[])
         printf("tot density: %.12E\n", total_density(params, cells));
     #endif
   }
+  printf("total_cells %d\n", local_tot_cells[0]);
 
   /* Compute time stops here, collate time starts*/
   gettimeofday(&timstr, NULL);
