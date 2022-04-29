@@ -442,15 +442,14 @@ int calc_all_rank_sizes(int size, int ny)
       ranks[i].end_col = (i * work) + work;
       allocated += work;
     }
-    while (allocated < (ny - 1)) {
+    while (allocated < ny) {
       for (int i = 0; i < size; i++) {
-        if (i == 0) {
+        ranks[i].end_col += 1;
+        allocated += 1;
+
+        for (int k = i+1; k < size; k++) {
+          ranks[i].start_col = ranks[i-1].end_col;
           ranks[i].end_col += 1;
-          allocated += 1;
-        } else {
-          ranks[i].start_col += i;
-          ranks[i].end_col += i+1;
-          allocated += 1;
         }
       }
     }
