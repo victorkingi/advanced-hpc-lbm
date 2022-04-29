@@ -725,7 +725,8 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       }
     }
   }
-  printf("col: %d, total_cells %d, tot_u %d\n", start_col, (float)tot_cells, tot_u);
+  printf("col %d ", start_col);
+  printf("total_cells %d, tot_u %d\n", (float)tot_cells, tot_u);
   return tot_u / (float)tot_cells;
 }
 
