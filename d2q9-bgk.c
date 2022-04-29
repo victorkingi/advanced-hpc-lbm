@@ -93,6 +93,13 @@ typedef struct {
     int end_col;
 } map_rank;
 
+//struct containing all tot_u and tot_cells values across all timesteps
+typedef struct {
+    float tot_u;
+    float tot_cells;
+} timestep_return;
+
+
 
 /*
 ** function prototypes
@@ -112,7 +119,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate(), rebound() & collision()
 */
-float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col);
+timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col);
 int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles);
 int write_values(const t_param params, t_speed* restrict cells, int* restrict obstacles, float* restrict av_vels);
 
@@ -134,6 +141,7 @@ void usage(const char *exe);
 
 /* global variable */
 unsigned int is_power_of_2;
+float global_total_cells;
 
 unsigned int check_power_of_2(unsigned int x) {
   unsigned int pow = 0;
@@ -180,6 +188,7 @@ int main(int argc, char *argv[])
   float *collate_buf;
   int ii;
   map_rank *ranks = NULL;
+  timestep_return *local_vals = NULL;
 
   /* parse the command line */
   if (argc != 3)
@@ -222,6 +231,9 @@ int main(int argc, char *argv[])
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
   global_av_vels = (float*)malloc(sizeof(float) * params.maxIters);
+  local_vals = (timestep_return*)malloc(sizeof(timestep_return) * params.maxIters);
+  local_vals.tot_cells = (float)malloc(sizeof(float));
+  local_vals.tot_u = (float)malloc(sizeof(float));
 
   printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", end_col-start_col, local_nrows, hostname, rank, size);
 
@@ -236,7 +248,9 @@ int main(int argc, char *argv[])
 
   for (int tt = 0; tt < params.maxIters; tt++)
   {
-    av_vels[tt] = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
+    local_vals[tt] = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
+    av_vels[tt] = 0;
+    printf("tot_cells %d, tot_u %d\n", local_vals[tt].tot_cells, local_vals[tt].tot_u);
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
@@ -544,7 +558,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   return EXIT_SUCCESS;
 }
 
-float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col)
+timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
   float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
@@ -724,8 +738,10 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       }
     }
   }
-  printf("%d\n", tot_u);
-  return tot_u / (float)tot_cells;
+  timestep_return return_val;
+  return_val.tot_cells = (float)tot_cells;
+  return_val.tot_u = tot_u;
+  return return_val;
 }
 
 
