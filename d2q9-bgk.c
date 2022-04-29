@@ -244,29 +244,67 @@ int main(int argc, char *argv[])
 
     /* send to the left, receive from right */
     for(ii=0; ii < local_nrows; ii++) {
-      
+      sendbuf[0 + (ii*9)] = cells->speed_0[ii + (start_col+1) * params.nx];
+      sendbuf[1 + (ii*9)] = cells->speed_1[ii + (start_col+1) * params.nx];
+      sendbuf[2 + (ii*9)] = cells->speed_2[ii + (start_col+1) * params.nx];
+      sendbuf[3 + (ii*9)] = cells->speed_3[ii + (start_col+1) * params.nx];
+      sendbuf[4 + (ii*9)] = cells->speed_4[ii + (start_col+1) * params.nx];
+      sendbuf[5 + (ii*9)] = cells->speed_5[ii + (start_col+1) * params.nx];
+      sendbuf[6 + (ii*9)] = cells->speed_6[ii + (start_col+1) * params.nx];
+      sendbuf[7 + (ii*9)] = cells->speed_7[ii + (start_col+1) * params.nx];
+      sendbuf[8 + (ii*9)] = cells->speed_8[ii + (start_col+1) * params.nx];
     }
       
-    MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, left, tag,
-          recvbuf, local_nrows, MPI_DOUBLE, right, tag,
+    MPI_Sendrecv(sendbuf, local_nrows, MPI_FLOAT, left, tag,
+          recvbuf, local_nrows, MPI_FLOAT, right, tag,
           MPI_COMM_WORLD, &status);
-    for(ii=0; ii < local_nrows; ii++)
-      w[ii * (local_ncols + 2) + local_ncols + 1] = recvbuf[ii];
+
+    for(ii=0; ii < local_nrows; ii++) {
+      cells->speed_0[ii + (local_ncols+1) * params.nx] = recvbuf[0 + (ii*9)];
+      cells->speed_1[ii + (local_ncols+1) * params.nx] = recvbuf[1 + (ii*9)];
+      cells->speed_2[ii + (local_ncols+1) * params.nx] = recvbuf[2 + (ii*9)]; 
+      cells->speed_3[ii + (local_ncols+1) * params.nx] = recvbuf[3 + (ii*9)]; 
+      cells->speed_4[ii + (local_ncols+1) * params.nx] = recvbuf[4 + (ii*9)]; 
+      cells->speed_5[ii + (local_ncols+1) * params.nx] = recvbuf[5 + (ii*9)]; 
+      cells->speed_6[ii + (local_ncols+1) * params.nx] = recvbuf[6 + (ii*9)]; 
+      cells->speed_7[ii + (local_ncols+1) * params.nx] = recvbuf[7 + (ii*9)]; 
+      cells->speed_8[ii + (local_ncols+1) * params.nx] = recvbuf[8 + (ii*9)];
+    }
     
     /* send to the right, receive from left */
-    for(ii=0; ii < local_nrows; ii++)
-      sendbuf[ii] = w[ii * (local_ncols + 2) + local_ncols];
+    for(ii=0; ii < local_nrows; ii++) {
+      sendbuf[0 + (ii*9)] = cells->speed_0[ii + local_ncols * params.nx];
+      sendbuf[1 + (ii*9)] = cells->speed_1[ii + local_ncols * params.nx];
+      sendbuf[2 + (ii*9)] = cells->speed_2[ii + local_ncols * params.nx];
+      sendbuf[3 + (ii*9)] = cells->speed_3[ii + local_ncols * params.nx];
+      sendbuf[4 + (ii*9)] = cells->speed_4[ii + local_ncols * params.nx];
+      sendbuf[5 + (ii*9)] = cells->speed_5[ii + local_ncols * params.nx];
+      sendbuf[6 + (ii*9)] = cells->speed_6[ii + local_ncols * params.nx];
+      sendbuf[7 + (ii*9)] = cells->speed_7[ii + local_ncols * params.nx];
+      sendbuf[8 + (ii*9)] = cells->speed_8[ii + local_ncols * params.nx];
+    }
+
     MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, right, tag,
           recvbuf, local_nrows, MPI_DOUBLE, left, tag,
           MPI_COMM_WORLD, &status);
-    for(ii=0; ii < local_nrows; ii++)
-      w[ii * (local_ncols + 2)] = recvbuf[ii];
 
-#ifdef DEBUG
-    printf("==timestep: %d==\n", tt);
-    printf("av velocity: %.12E\n", av_vels[tt]);
-    printf("tot density: %.12E\n", total_density(params, cells));
-#endif
+    for(ii=0; ii < local_nrows; ii++) {
+      cells->speed_0[ii + (start_col) * params.nx] = recvbuf[0 + (ii*9)];
+      cells->speed_1[ii + (start_col) * params.nx] = recvbuf[1 + (ii*9)];
+      cells->speed_2[ii + (start_col) * params.nx] = recvbuf[2 + (ii*9)]; 
+      cells->speed_3[ii + (start_col) * params.nx] = recvbuf[3 + (ii*9)]; 
+      cells->speed_4[ii + (start_col) * params.nx] = recvbuf[4 + (ii*9)]; 
+      cells->speed_5[ii + (start_col) * params.nx] = recvbuf[5 + (ii*9)]; 
+      cells->speed_6[ii + (start_col) * params.nx] = recvbuf[6 + (ii*9)]; 
+      cells->speed_7[ii + (start_col) * params.nx] = recvbuf[7 + (ii*9)]; 
+      cells->speed_8[ii + (start_col) * params.nx] = recvbuf[8 + (ii*9)];
+    }
+
+    #ifdef DEBUG
+        printf("==timestep: %d==\n", tt);
+        printf("av velocity: %.12E\n", av_vels[tt]);
+        printf("tot density: %.12E\n", total_density(params, cells));
+    #endif
   }
 
   /* Compute time stops here, collate time starts*/
