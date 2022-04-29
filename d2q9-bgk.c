@@ -141,7 +141,6 @@ void usage(const char *exe);
 
 /* global variable */
 unsigned int is_power_of_2;
-float global_total_cells;
 
 unsigned int check_power_of_2(unsigned int x) {
   unsigned int pow = 0;
@@ -190,6 +189,7 @@ int main(int argc, char *argv[])
   map_rank *ranks = NULL;
   timestep_return local_vals;
 
+
   /* parse the command line */
   if (argc != 3)
   {
@@ -221,6 +221,10 @@ int main(int argc, char *argv[])
   init_tic = tot_tic;
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
   is_power_of_2 = check_power_of_2(params.nx);
+  float local_tot_cells[params.maxIters];
+  float local_tot_u[params.maxIters];
+  float global_tot_cells[params.maxIters];
+  float global_tot_u[params.maxIters];
 
   calc_all_rank_sizes(size, params.ny, &ranks);
 
@@ -231,8 +235,6 @@ int main(int argc, char *argv[])
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
   global_av_vels = (float*)malloc(sizeof(float) * params.maxIters);
-  float local_tot_cells[params.maxIters];
-  float local_tot_u[params.maxIters];
 
   printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", end_col-start_col, local_nrows, hostname, rank, size);
 
@@ -415,13 +417,11 @@ int main(int argc, char *argv[])
   gettimeofday(&timstr, NULL);
   comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   col_tic = comp_toc;
-  float *global_tot_cells_each_timestep = (float *)malloc(sizeof(float) * params.maxIters);
-  float *global_tot_u_each_timestep = (float *)malloc(sizeof(float) * params.maxIters);
   printf("total_cells %d\n", local_tot_cells[0]);
 
-  MPI_Reduce(local_tot_cells, global_tot_cells_each_timestep, params.maxIters, MPI_FLOAT,
+  MPI_Reduce(local_tot_cells, global_tot_cells, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
-  MPI_Reduce(local_tot_u, global_tot_u_each_timestep, params.maxIters, MPI_FLOAT,
+  MPI_Reduce(local_tot_u, global_tot_u, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
