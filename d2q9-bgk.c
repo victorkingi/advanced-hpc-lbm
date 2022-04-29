@@ -167,7 +167,6 @@ int main(int argc, char *argv[])
   t_speed* tmp_cells = NULL;                                                         /* scratch space */
   int* obstacles = NULL;                                                             /* grid indicating which cells are blocked */
   float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
-  float *global_av_vels = NULL;
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
 
@@ -252,7 +251,6 @@ int main(int argc, char *argv[])
     local_vals = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
     local_tot_cells[tt] = local_vals.tot_cells;
     local_tot_u[tt] = local_vals.tot_u;
-    av_vels[tt] = 0;
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
@@ -412,21 +410,22 @@ int main(int argc, char *argv[])
         printf("tot density: %.12E\n", total_density(params, cells));
     #endif
   }
-  printf("total_u %d\n", local_tot_u[0]);
-  printf("total_cells %d\n", local_tot_cells[0]);
   
   MPI_Reduce(local_tot_cells, global_tot_cells, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
   MPI_Reduce(local_tot_u, global_tot_u, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
 
+  if (rank == 0) {
+    for (int tt = 0; tt < params.maxIters; tt++) {
+      av_vels[tt] = global_tot_u[tt] / global_tot_cells[tt];
+    }
+  }
+
   /* Compute time stops here, collate time starts*/
   gettimeofday(&timstr, NULL);
   comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   col_tic = comp_toc;
-
-  MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
-              MPI_SUM, 0, MPI_COMM_WORLD);
 
   // Collate data from ranks here
   if (rank == 0) {
@@ -462,7 +461,7 @@ int main(int argc, char *argv[])
     printf("Elapsed Compute time:\t\t\t%.6lf (s)\n", comp_toc - comp_tic);
     printf("Elapsed Collate time:\t\t\t%.6lf (s)\n", col_toc - col_tic);
     printf("Elapsed Total time:\t\t\t%.6lf (s)\n", tot_toc - tot_tic);
-    write_values(params, cells, obstacles, global_av_vels);
+    write_values(params, cells, obstacles, av_vels);
 
   } else {
     for (int col = start_col; col < end_col; col++) {
@@ -482,13 +481,11 @@ int main(int argc, char *argv[])
   }
 
   MPI_Finalize();
-  finalise(&params, &cells, &tmp_cells, &obstacles, &global_av_vels);
+  finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
   free(sendbuf);
   free(recvbuf);
   free(collate_buf);
-  free(av_vels);
   free(ranks);
-  av_vels = NULL;
   sendbuf = NULL;
   recvbuf = NULL;
   collate_buf = NULL;
