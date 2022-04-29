@@ -165,6 +165,26 @@ int main(int argc, char *argv[])
     obstaclefile = argv[2];
   }
 
+   /* initialise our MPI environment */
+  MPI_Init( &argc, &argv );
+
+  /* check whether the initialisation was successful */
+  MPI_Initialized(&flag);
+  if ( flag != TRUE ) {
+    MPI_Abort(MPI_COMM_WORLD,EXIT_FAILURE);
+  }
+
+  MPI_Get_processor_name(hostname,&strlen_);
+  MPI_Comm_size( MPI_COMM_WORLD, &size );
+  MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+
+  right = (rank + 1) % size;
+  left = (rank == 0) ? (rank + size - 1) : (rank - 1);
+
+  local_nrows = params.nx;
+  local_ncols = calc_ncols_from_rank(params, rank, size);
+  printf("local columns %d local_nrows %d; from host %s: process %d of %d\n", local_ncols, local_nrows, hostname, rank, size);
+
   /* Total/init time starts here: initialise our data structures and load values from file */
   gettimeofday(&timstr, NULL);
   tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
@@ -213,6 +233,9 @@ int main(int argc, char *argv[])
   printf("Elapsed Total time:\t\t\t%.6lf (s)\n", tot_toc - tot_tic);
   write_values(params, cells, obstacles, av_vels);
   finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
+
+  /* finialise the MPI enviroment */
+  MPI_Finalize();
 
   return EXIT_SUCCESS;
 }
