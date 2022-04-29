@@ -100,7 +100,7 @@ typedef struct {
 
 int calc_ncols_from_rank(const t_param params, int rank, int size);
 
-int calc_all_rank_sizes(int size, int ny);
+void calc_all_rank_sizes(int size, int ny, map_rank **ranks);
 
 /* load params, allocate memory, load obstacles & initialise fluid particle densities */
 int initialise(const char *paramfile, const char *obstaclefile,
