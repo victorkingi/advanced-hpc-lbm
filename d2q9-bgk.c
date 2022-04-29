@@ -93,6 +93,11 @@ typedef struct {
     int end_col;
 } map_rank;
 
+typedef struct {
+    float tot_cells;
+    float tot_u;
+} timestep_return;
+
 
 /*
 ** function prototypes
@@ -112,7 +117,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate(), rebound() & collision()
 */
-float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col);
+timestep timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col);
 int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles);
 int write_values(const t_param params, t_speed* restrict cells, int* restrict obstacles, float* restrict av_vels);
 
@@ -234,8 +239,9 @@ int main(int argc, char *argv[])
 
   for (int tt = 0; tt < params.maxIters; tt++)
   {
-    av_vels[tt] = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
-    //av_vels[tt]
+    timestep_return my_vals = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
+    printf("total_cells %d, tot_u %d\n", my_vals.tot_cells, my_vals.tot_u);
+    av_vels[tt] = 0;
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
@@ -545,7 +551,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   return EXIT_SUCCESS;
 }
 
-float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col)
+timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
   float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
@@ -725,8 +731,10 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       }
     }
   }
-  printf("total_cells %d, tot_u %d\n", (float)tot_cells, tot_u);
-  return tot_u / (float)tot_cells;
+  timestep_return vals;
+  vals.tot_cells = (float)tot_cells;
+  vals.tot_u = tot_u;
+  return vals;
 }
 
 
@@ -769,7 +777,6 @@ float av_velocity(const t_param params, t_speed* restrict cells, int* restrict o
       }
     }
   }
-
   return tot_u / (float)tot_cells;
 }
 
