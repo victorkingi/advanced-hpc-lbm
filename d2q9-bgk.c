@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
   }
   if (rank == 0) {
      for(int i=0; i<params.maxIters; i++) {
-      printf("Before: %d \n", global_av_vels[i]);
+      printf("Before: %d, %d \n", global_av_vels[i], av_vels[i]);
      }
   }
 
@@ -456,7 +456,7 @@ int main(int argc, char *argv[])
 
   if (rank == 0) {
      for(int i=0; i<params.maxIters; i++) {
-      printf("After: %d \n", global_av_vels[i]);
+      printf("After: %d, %d \n", global_av_vels[i], av_vels[i]);
      }
   }
 
