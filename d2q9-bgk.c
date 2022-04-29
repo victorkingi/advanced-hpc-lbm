@@ -442,7 +442,7 @@ int calc_all_rank_sizes(int size, int ny)
       ranks[i].end_col = (i * work) + work;
       allocated += work;
     }
-    while (allocated != ny) {
+    while (allocated < ny) {
       for (int i = 0; i < size; i++) {
         printf("Before rank %d, start %d, end %d allocated %d \n", i, start, end, allocated);
         if (i == 0) {
