@@ -243,15 +243,19 @@ int main(int argc, char *argv[])
     ** - exchange using MPI_Sendrecv()
     ** - unpack values from the recieve buffer into the grid
     */
-    /*
     if (size != 1) {
-      // send to the left, receive from right
+      /* send to the left, receive from right */
       if (rank == 0) {
         // left doesn't exist hence no sending
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
             recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
             MPI_COMM_WORLD, &status);
         
+        if (end_col == params.ny) {
+          printf("EDGE CASE\n");
+        }
+        printf("end_col: %d\n", end_col);
+      
         for(ii=0; ii < local_nrows; ii++) {
           cells->speed_0[ii + end_col * params.nx] = recvbuf[0 + (ii*9)];
           cells->speed_1[ii + end_col * params.nx] = recvbuf[1 + (ii*9)];
@@ -300,7 +304,11 @@ int main(int argc, char *argv[])
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               MPI_COMM_WORLD, &status);
-
+          
+        printf("end_col: %d\n", end_col);
+        if (end_col == params.ny) {
+          printf("EDGE CASE\n");
+        }
         for(ii=0; ii < local_nrows; ii++) {
           cells->speed_0[ii + end_col * params.nx] = recvbuf[0 + (ii*9)];
           cells->speed_1[ii + end_col * params.nx] = recvbuf[1 + (ii*9)];
@@ -314,7 +322,7 @@ int main(int argc, char *argv[])
         }
       }
       
-      // send to the right, receive from left
+      /* send to the right, receive from left */
       if (rank = size - 1) {
         // right doesn't exist hence no sending
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
@@ -382,7 +390,6 @@ int main(int argc, char *argv[])
       }   
     }
 
-    */
     #ifdef DEBUG
         printf("==timestep: %d==\n", tt);
         printf("av velocity: %.12E\n", av_vels[tt]);
