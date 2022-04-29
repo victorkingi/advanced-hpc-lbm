@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
 
   local_nrows = params.nx;
   local_ncols = calc_ncols_from_rank(params, rank, size);
-  printf("local columns %d local_nrows %d; from host %s: process %d of %d\n", local_ncols, local_nrows, hostname, rank, size);
+  printf("local columns %d local_nrows %d; from host %s: process %d of %d\n", params.ny, local_nrows, hostname, rank, size);
 
   /* Total/init time starts here: initialise our data structures and load values from file */
   gettimeofday(&timstr, NULL);
