@@ -415,7 +415,7 @@ int main(int argc, char *argv[])
   
   MPI_Reduce(local_tot_cells, global_tot_cells, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
-  printf("total_cells %d\n", local_tot_cells[0]);
+  printf("total_cells %d\n", global_tot_cells[0]);
 
   /* Compute time stops here, collate time starts*/
   gettimeofday(&timstr, NULL);
