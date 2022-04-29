@@ -179,6 +179,7 @@ int main(int argc, char *argv[])
   float *printbuf;      /* buffer to hold values for printing */
   int ii;
   int remote_ncols;
+  map_rank *ranks = NULL;
 
   /* parse the command line */
   if (argc != 3)
@@ -228,7 +229,11 @@ int main(int argc, char *argv[])
 
   accelerate_flow(params, cells, obstacles);
   is_power_of_2 = check_power_of_2(params.nx);
-  calc_all_rank_sizes(size, params.ny);
+  calc_all_rank_sizes(size, params.ny, &ranks);
+
+  for (int i = 0; i < size; i++) {
+    printf("Rank %d, start_col %d, end_col %d\n", i, ranks[i].start_col, ranks[i].end_col);
+  }
 
   printf("start col %d, end col %d; right_col_node, %d, left_col_node %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
 
@@ -423,42 +428,38 @@ int main(int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
-int calc_all_rank_sizes(int size, int ny)
+void calc_all_rank_sizes(int size, int ny, map_rank **ranks)
 {
   int allocated = 0;
   int start = 0;
   int end = 0;
   int work = ny / size;
-  map_rank* ranks = (map_rank *)malloc(sizeof(map_rank));
+  *ranks = (map_rank *)malloc(sizeof(map_rank));
 
   if (ny % size == 0) {
     for (int i = 0; i < size; i++) {
-      ranks[i].start_col = i * work;
-      ranks[i].end_col = (i * work) + work;
+      *ranks[i].start_col = i * work;
+      *ranks[i].end_col = (i * work) + work;
     }
   } else {
     for (int i = 0; i < size; i++) {
-      ranks[i].start_col = i * work;
-      ranks[i].end_col = (i * work) + work;
+      *ranks[i].start_col = i * work;
+      *ranks[i].end_col = (i * work) + work;
       allocated += work;
     }
     while (allocated < ny) {
       for (int i = 0; i < size; i++) {
         if (!(allocated < ny)) break;
-        ranks[i].end_col += 1;
+        *ranks[i].end_col += 1;
         allocated += 1;
 
         for (int k = i+1; k < size; k++) {
-          ranks[k].start_col = ranks[k-1].end_col;
-          ranks[k].end_col += 1;
+          *ranks[k].start_col = *ranks[k-1].end_col;
+          *ranks[k].end_col += 1;
         }
       }
     }
   }
-  for (int i = 0; i < size; i++) {
-    printf("Rank %d, start_col %d, end_col %d\n", i, ranks[i].start_col, ranks[i].end_col);
-  }
-  return 0;
 }
 
 int calc_ncols_from_rank(const t_param params, int rank, int size)
