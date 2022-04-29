@@ -171,6 +171,7 @@ int main(int argc, char *argv[])
   float *recvbuf;       /* buffer to hold received values */
   float *printbuf;      /* buffer to hold values for printing */
   int ii;
+  int remote_ncols;
 
   /* parse the command line */
   if (argc != 3)
@@ -206,7 +207,7 @@ int main(int argc, char *argv[])
   int local_nrows = params.nx;
   int local_ncols = calc_ncols_from_rank(params, rank, size);
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
-  recvbuf = (float*)malloc(sizeof(float) * local_nrows) * 9);
+  recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
 
   remote_ncols = calc_ncols_from_rank(params, size-1, size); 
   printbuf = (float*)malloc(sizeof(float) * (remote_ncols + 2) * 9);
