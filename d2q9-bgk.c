@@ -200,6 +200,11 @@ int main(int argc, char *argv[])
     obstaclefile = argv[2];
   }
 
+  /* Total/init time starts here: initialise our data structures and load values from file */
+  gettimeofday(&timstr, NULL);
+  tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
+  init_tic = tot_tic;
+
   MPI_Init( &argc, &argv );
   MPI_Initialized(&flag);
   if ( flag != TRUE ) {
@@ -213,12 +218,8 @@ int main(int argc, char *argv[])
   right = (rank == size - 1) ? MPI_PROC_NULL : (rank + 1);
   left = (rank == 0) ? MPI_PROC_NULL : (rank - 1);
 
-
-  /* Total/init time starts here: initialise our data structures and load values from file */
-  gettimeofday(&timstr, NULL);
-  tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
-  init_tic = tot_tic;
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
+
   is_power_of_2 = check_power_of_2(params.nx);
   float local_tot_cells[params.maxIters];
   float local_tot_u[params.maxIters];
@@ -234,14 +235,14 @@ int main(int argc, char *argv[])
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
 
+  printf("start %d, end %d; right %d, left %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
+
   /* Init time stops here, compute time starts*/
   gettimeofday(&timstr, NULL);
   init_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   comp_tic = init_toc;
 
   accelerate_flow(params, cells, obstacles);
-
-  printf("start %d, end %d; right %d, left %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
 
   for (int tt = 0; tt < params.maxIters; tt++)
   {
