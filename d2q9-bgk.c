@@ -466,7 +466,7 @@ int main(int argc, char *argv[])
         cells->speed_8[ii + (jj - 1)*params.nx] = w->speed_8[ii + jj*(local_ncols + 2)];
       }
       for(kk=1;kk<size;kk++) {  // loop over other ranks 
-        remote_ncols = calc_ncols_from_rank(kk, size);
+        remote_ncols = calc_ncols_from_rank(params, kk, size);
         MPI_Recv(printbuf,(remote_ncols + 2) * 9,MPI_FLOAT,kk,tag,MPI_COMM_WORLD,&status);
 
 	      for(jj=1; jj<remote_ncols + 1; jj++) {
