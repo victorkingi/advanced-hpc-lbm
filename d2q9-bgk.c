@@ -446,18 +446,22 @@ int main(int argc, char *argv[])
     }
   }
   if (rank == 0) {
-     for(int i=0; i<params.maxIters; i++) {
-      printf("Before: %d, %d \n", global_av_vels[i], av_vels[i]);
-     }
+    for(int i=0; i<params.maxIters; i++) {
+      if (av_vels[i] != 0 || global_av_vels[i] != 0) {
+        printf("Before: %d, %d \n", global_av_vels[i], av_vels[i]);
+      }
+    }
   }
 
   MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
                MPI_SUM, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
-     for(int i=0; i<params.maxIters; i++) {
-      printf("After: %d, %d \n", global_av_vels[i], av_vels[i]);
-     }
+    for(int i=0; i<params.maxIters; i++) {
+      if (av_vels[i] != 0 || global_av_vels[i] != 0) {
+        printf("After: %d, %d \n", global_av_vels[i], av_vels[i]);
+      }
+    }
   }
 
   if (rank == 0) {
