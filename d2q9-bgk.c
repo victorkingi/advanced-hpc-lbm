@@ -444,7 +444,7 @@ int calc_all_rank_sizes(int size, int ny)
       ranks[i].end_col = end;
       allocated += work;
     }
-    printf("start %d end %d\n", start, end)
+    printf("start %d end %d allocated %d \n", start, end, allocated);
     while (allocated != ny) {
       for (int i = 0; i < size; i++) {
         if (i == 0) {
