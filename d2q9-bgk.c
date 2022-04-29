@@ -105,7 +105,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate(), rebound() & collision()
 */
-float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles);
+float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col);
 int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles);
 int write_values(const t_param params, t_speed* restrict cells, int* restrict obstacles, float* restrict av_vels);
 
@@ -167,6 +167,9 @@ int main(int argc, char *argv[])
   int strlen_;             /* length of a character array */
   enum bool {FALSE,TRUE}; /* enumerated type: false = 0, true = 1 */  
   char hostname[MPI_MAX_PROCESSOR_NAME];  /* character array to hold hostname running process */
+  float *sendbuf;       /* buffer to hold values to send */
+  float *recvbuf;       /* buffer to hold received values */
+  float *printbuf;      /* buffer to hold values for printing */
 
   /* parse the command line */
   if (argc != 3)
@@ -201,6 +204,12 @@ int main(int argc, char *argv[])
 
   int local_nrows = params.nx;
   int local_ncols = calc_ncols_from_rank(params, rank, size);
+  sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
+  recvbuf = (float*)malloc(sizeof(float) * local_nrows) * 9);
+
+  remote_ncols = calc_ncols_from_rank(size-1, size); 
+  printbuf = (float*)malloc(sizeof(float) * (remote_ncols + 2) * 9);
+
   printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", local_ncols, local_nrows, hostname, rank, size);
 
   /* Init time stops here, compute time starts*/
@@ -211,12 +220,48 @@ int main(int argc, char *argv[])
   accelerate_flow(params, cells, obstacles);
   is_power_of_2 = check_power_of_2(params.nx);
 
+  int n = params.ny;
+  start_col = rank * local_ncols;
+  end_col = start_col + local_ncols;
+
+
   for (int tt = 0; tt < params.maxIters; tt++)
   {
-    av_vels[tt] = timestep(params, cells, tmp_cells, obstacles);
+    av_vels[tt] = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
+
+    /*
+    ** halo exchange for the local grids:
+    ** - first send to the left and receive from the right,
+    ** - then send to the right and receive from the left.
+    ** for each direction:
+    ** - first, pack the send buffer using values from the grid
+    ** - exchange using MPI_Sendrecv()
+    ** - unpack values from the recieve buffer into the grid
+    */
+
+    /* send to the left, receive from right */
+    for(ii=0; ii < local_nrows; ii++) {
+      
+    }
+      
+    MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, left, tag,
+          recvbuf, local_nrows, MPI_DOUBLE, right, tag,
+          MPI_COMM_WORLD, &status);
+    for(ii=0; ii < local_nrows; ii++)
+      w[ii * (local_ncols + 2) + local_ncols + 1] = recvbuf[ii];
+    
+    /* send to the right, receive from left */
+    for(ii=0; ii < local_nrows; ii++)
+      sendbuf[ii] = w[ii * (local_ncols + 2) + local_ncols];
+    MPI_Sendrecv(sendbuf, local_nrows, MPI_DOUBLE, right, tag,
+          recvbuf, local_nrows, MPI_DOUBLE, left, tag,
+          MPI_COMM_WORLD, &status);
+    for(ii=0; ii < local_nrows; ii++)
+      w[ii * (local_ncols + 2)] = recvbuf[ii];
+
 #ifdef DEBUG
     printf("==timestep: %d==\n", tt);
     printf("av velocity: %.12E\n", av_vels[tt]);
@@ -297,7 +342,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   return EXIT_SUCCESS;
 }
 
-float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles)
+float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
   float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
@@ -335,7 +380,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume((params.ny)%2==0);
 
   #pragma omp simd reduction(+:tot_cells, tot_u)
-  for (int jj = 0; jj < params.ny; jj++)
+  for (int jj = start_col+1; jj < (end_col+1); jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
     {
