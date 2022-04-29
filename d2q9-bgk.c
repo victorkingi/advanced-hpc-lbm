@@ -226,7 +226,8 @@ int main(int argc, char *argv[])
   start_col = rank * local_ncols;
   end_col = start_col + local_ncols;
   printf("start col %d, end col %d; from host %s: process %d of %d\n", start_col, end_col, hostname, rank, size);
-  bool ok = 0;
+  int ok = 0;
+
   for (int tt = 0; tt < params.maxIters; tt++)
   {
     av_vels[tt] = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
