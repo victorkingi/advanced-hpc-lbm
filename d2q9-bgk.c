@@ -93,6 +93,8 @@ typedef struct
 ** function prototypes
 */
 
+int calc_ncols_from_rank(int rank, int size);
+
 /* load params, allocate memory, load obstacles & initialise fluid particle densities */
 int initialise(const char *paramfile, const char *obstaclefile,
                t_param *params, t_speed **cells_ptr, t_speed **tmp_cells_ptr,
@@ -247,6 +249,19 @@ int main(int argc, char *argv[])
   MPI_Finalize();
 
   return EXIT_SUCCESS;
+}
+
+int calc_ncols_from_rank(const t_param params, int rank, int size)
+{
+  int ncols;
+
+  ncols = params.ny / size;       /* integer division */
+  if ((params.ny % size) != 0) {  /* if there is a remainder */
+    if (rank == size - 1)
+      ncols += params.ny % size;  /* add remainder to last rank */
+  }
+  
+  return ncols;
 }
 
 int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles)
