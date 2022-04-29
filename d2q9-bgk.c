@@ -170,6 +170,7 @@ int main(int argc, char *argv[])
   float *sendbuf;       /* buffer to hold values to send */
   float *recvbuf;       /* buffer to hold received values */
   float *printbuf;      /* buffer to hold values for printing */
+  int ii;
 
   /* parse the command line */
   if (argc != 3)
