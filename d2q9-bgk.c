@@ -407,7 +407,13 @@ int main(int argc, char *argv[])
         printf("tot density: %.12E\n", total_density(params, cells));
     #endif
   }
-  
+
+  /* Compute time stops here, collate time starts*/
+  gettimeofday(&timstr, NULL);
+  comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
+  col_tic = comp_toc;
+
+  // Collate data from ranks here
   MPI_Reduce(local_tot_cells, global_tot_cells, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
   MPI_Reduce(local_tot_u, global_tot_u, params.maxIters, MPI_FLOAT,
@@ -417,15 +423,7 @@ int main(int argc, char *argv[])
     for (int tt = 0; tt < params.maxIters; tt++) {
       av_vels[tt] = global_tot_u[tt] / global_tot_cells[tt];
     }
-  }
 
-  /* Compute time stops here, collate time starts*/
-  gettimeofday(&timstr, NULL);
-  comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
-  col_tic = comp_toc;
-
-  // Collate data from ranks here
-  if (rank == 0) {
     // receive columns from other ranks, update local cells with this values
     for (int k = 1; k < size; k++) {
       int remote_ncols = ranks[k].end_col - ranks[k].start_col;
