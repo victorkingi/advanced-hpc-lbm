@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   recvbuf = (float*)malloc(sizeof(float) * local_nrows) * 9);
 
-  remote_ncols = calc_ncols_from_rank(size-1, size); 
+  remote_ncols = calc_ncols_from_rank(params, size-1, size); 
   printbuf = (float*)malloc(sizeof(float) * (remote_ncols + 2) * 9);
 
   printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", local_ncols, local_nrows, hostname, rank, size);
