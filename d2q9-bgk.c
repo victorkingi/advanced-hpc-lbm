@@ -425,7 +425,7 @@ int main(int argc, char *argv[])
 
   if (rank == 0) {
     for (int g = 0; g < params.maxIters; g++) {
-      printf("total_cells %d\n", global_tot_cells_each_timestep[g]);
+      printf("total_cells %d\n", local_tot_cells[g]);
     }
   }
 
