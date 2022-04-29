@@ -448,7 +448,7 @@ int calc_all_rank_sizes(int size, int ny)
         allocated += 1;
 
         for (int k = i+1; k < size; k++) {
-          ranks[i].start_col = ranks[i-1].end_col;
+          ranks[i].start_col += (i+1);
           ranks[i].end_col += 1;
         }
       }
