@@ -156,8 +156,6 @@ int main(int argc, char *argv[])
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
 
-  int local_nrows;       /* number of rows apportioned to this rank */
-  int local_ncols;       /* number of columns apportioned to this rank */
   int remote_ncols;      /* number of columns apportioned to a remote rank */
   int rank;              /* the rank of this process */
   int left;              /* the rank of the process to the left */
@@ -197,15 +195,15 @@ int main(int argc, char *argv[])
   right = (rank + 1) % size;
   left = (rank == 0) ? (rank + size - 1) : (rank - 1);
 
-  local_nrows = params.nx;
-  local_ncols = calc_ncols_from_rank(params, rank, size);
-  printf("local columns %d local_nrows %d; from host %s: process %d of %d\n", params.ny, local_nrows, hostname, rank, size);
-
   /* Total/init time starts here: initialise our data structures and load values from file */
   gettimeofday(&timstr, NULL);
   tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   init_tic = tot_tic;
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
+
+  int local_nrows = params.nx;
+  int local_ncols = calc_ncols_from_rank(params, rank, size);
+  printf("local columns %d local_nrows %d; from host %s: process %d of %d\n", local_ncols, local_nrows, hostname, rank, size);
 
   /* Init time stops here, compute time starts*/
   gettimeofday(&timstr, NULL);
