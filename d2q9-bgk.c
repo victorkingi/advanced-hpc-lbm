@@ -424,7 +424,9 @@ int main(int argc, char *argv[])
               MPI_SUM, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
-    printf("total_cells %d, tot_u %d \n", global_tot_cells_each_timestep[0], global_tot_u_each_timestep[0]);
+    for (int g = 0; g < params.maxIters; g++) {
+      printf("total_cells %d\n", global_tot_cells_each_timestep[g]);
+    }
   }
 
   MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
