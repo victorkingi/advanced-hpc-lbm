@@ -422,7 +422,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume((params.ny)%2==0);
 
   #pragma omp simd reduction(+:tot_cells, tot_u)
-  for (int jj = start_col+1; jj < (end_col+1); jj++)
+  for (int jj = start_col; jj < end_col; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
     {
