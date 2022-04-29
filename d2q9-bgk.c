@@ -228,9 +228,7 @@ int main(int argc, char *argv[])
 
   accelerate_flow(params, cells, obstacles);
   is_power_of_2 = check_power_of_2(params.nx);
-  if (rank == 0) {
-    calc_all_rank_sizes(size, params.ny);
-  }
+  calc_all_rank_sizes(size, params.ny);
 
   printf("start col %d, end col %d; right_col_node, %d, left_col_node %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
 
