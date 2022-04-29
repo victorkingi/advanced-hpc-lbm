@@ -159,7 +159,6 @@ int main(int argc, char *argv[])
   t_speed* cells = NULL;                                                             /* grid containing fluid densities */
   t_speed* tmp_cells = NULL;                                                         /* scratch space */
   int* obstacles = NULL;                                                             /* grid indicating which cells are blocked */
-  float *global_av_vels = NULL;
   float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
@@ -397,16 +396,12 @@ int main(int argc, char *argv[])
     #endif
   }
 
-  for (int tt = 0; tt < params.maxIters; tt++) {
-    if (av_vels[tt]) {
-      printf("av_vels[tt] %d\n", av_vels[tt]);
-    }
-  }
-
   /* Compute time stops here, collate time starts*/
   gettimeofday(&timstr, NULL);
   comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   col_tic = comp_toc;
+
+  float *global_av_vels = av_vels;
 
   MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
@@ -730,7 +725,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       }
     }
   }
-
+  printf("total_cells %d, tot_u %d\n", (float)tot_cells, tot_u);
   return tot_u / (float)tot_cells;
 }
 
