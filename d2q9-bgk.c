@@ -240,6 +240,9 @@ int main(int argc, char *argv[])
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
+    if (av_vels[tt]) {
+      printf("av_vels[tt] %d\n", av_vels[tt]);
+    }
 
     /*
     ** halo exchange for the local grids:
@@ -402,6 +405,9 @@ int main(int argc, char *argv[])
   comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   col_tic = comp_toc;
 
+  MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
+              MPI_SUM, 0, MPI_COMM_WORLD);
+
   // Collate data from ranks here
   if (rank == 0) {
     // receive columns from other ranks, update local cells with this values
@@ -410,10 +416,6 @@ int main(int argc, char *argv[])
       for (int col = ranks[k].start_col; col < ranks[k].end_col; col++) {
         // for each column, receive it to a buffer
         MPI_Recv(collate_buf, local_nrows * 9, MPI_FLOAT, k, tag, MPI_COMM_WORLD, &status);
-
-        if (col < ranks[rank].end_col) {
-          printf("EDGE CASE: %d\n", col);
-        }
 
         for(ii=0; ii < local_nrows; ii++) {
           cells->speed_0[ii + col * params.nx] = collate_buf[0 + (ii*9)];
@@ -428,6 +430,20 @@ int main(int argc, char *argv[])
         }
       }
     }
+    /* Total/collate time stops here.*/
+    gettimeofday(&timstr, NULL);
+    col_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
+    tot_toc = col_toc;
+
+    /* write final values and free memory */
+    printf("==done==\n");
+    printf("Reynolds number:\t\t%.12E\n", calc_reynolds(params, cells, obstacles));
+    printf("Elapsed Init time:\t\t\t%.6lf (s)\n", init_toc - init_tic);
+    printf("Elapsed Compute time:\t\t\t%.6lf (s)\n", comp_toc - comp_tic);
+    printf("Elapsed Collate time:\t\t\t%.6lf (s)\n", col_toc - col_tic);
+    printf("Elapsed Total time:\t\t\t%.6lf (s)\n", tot_toc - tot_tic);
+    write_values(params, cells, obstacles, global_av_vels);
+    finalise(&params, &cells, &tmp_cells, &obstacles, &global_av_vels);
 
   } else {
     for (int col = start_col; col < end_col; col++) {
@@ -444,41 +460,6 @@ int main(int argc, char *argv[])
       }
       MPI_Send(collate_buf, local_nrows * 9, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
     }
-  }
-  if (rank == 0) {
-    for(int i=0; i<params.maxIters; i++) {
-      if (av_vels[i] != 0 || global_av_vels[i] != 0) {
-        printf("Before: %d, %d \n", global_av_vels[i], av_vels[i]);
-      }
-     }
-  }
-
-  MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
-               MPI_SUM, 0, MPI_COMM_WORLD);
-
-  if (rank == 0) {
-    for(int i=0; i<params.maxIters; i++) {
-      if (av_vels[i] != 0 || global_av_vels[i] != 0) {
-        printf("After: %d \n", global_av_vels[i] == av_vels[i]);
-      }
-    }
-  }
-
-  if (rank == 0) {
-    /* Total/collate time stops here.*/
-    gettimeofday(&timstr, NULL);
-    col_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
-    tot_toc = col_toc;
-
-    /* write final values and free memory */
-    printf("==done==\n");
-    printf("Reynolds number:\t\t%.12E\n", calc_reynolds(params, cells, obstacles));
-    printf("Elapsed Init time:\t\t\t%.6lf (s)\n", init_toc - init_tic);
-    printf("Elapsed Compute time:\t\t\t%.6lf (s)\n", comp_toc - comp_tic);
-    printf("Elapsed Collate time:\t\t\t%.6lf (s)\n", col_toc - col_tic);
-    printf("Elapsed Total time:\t\t\t%.6lf (s)\n", tot_toc - tot_tic);
-    write_values(params, cells, obstacles, global_av_vels);
-    finalise(&params, &cells, &tmp_cells, &obstacles, &global_av_vels);
   }
 
   MPI_Finalize();
