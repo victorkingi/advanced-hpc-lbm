@@ -168,6 +168,7 @@ int main(int argc, char *argv[])
   int flag;               /* for checking whether MPI_Init() has been called */
   int strlen_;             /* length of a character array */
   char hostname[MPI_MAX_PROCESSOR_NAME];  /* character array to hold hostname running process */
+  enum bool {FALSE,TRUE}; /* enumerated type: false = 0, true = 1 */ 
 
   /* parse the command line */
   if (argc != 3)
