@@ -254,6 +254,7 @@ int main(int argc, char *argv[])
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
+    printf("total_cells %d\n", local_tot_cells[tt]);
 
     /*
     ** halo exchange for the local grids:
@@ -425,7 +426,7 @@ int main(int argc, char *argv[])
 
   if (rank == 0) {
     for (int g = 0; g < params.maxIters; g++) {
-      printf("total_cells %d\n", local_tot_cells[g]);
+      
     }
   }
 
