@@ -381,8 +381,8 @@ int main(int argc, char *argv[])
           cells->speed_8[ii + (start_col - 1) * params.nx] = recvbuf[8 + (ii*9)];
         }
       }
+      }
     */
-    }
 
     #ifdef DEBUG
         printf("==timestep: %d==\n", tt);
