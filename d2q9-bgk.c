@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
   start_col = rank * local_ncols;
   end_col = start_col + local_ncols;
   printf("start col %d, end col %d; from host %s: process %d of %d\n", start_col, end_col, hostname, rank, size);
-
+  bool ok = 0;
   for (int tt = 0; tt < params.maxIters; tt++)
   {
     av_vels[tt] = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
@@ -256,6 +256,11 @@ int main(int argc, char *argv[])
         sendbuf[6 + (ii*9)] = cells->speed_6[ii + (start_col+1) * params.nx];
         sendbuf[7 + (ii*9)] = cells->speed_7[ii + (start_col+1) * params.nx];
         sendbuf[8 + (ii*9)] = cells->speed_8[ii + (start_col+1) * params.nx];
+
+        if (!ok) {
+          printf("offset: %d, row number %d\n", ii + (start_col+1) * params.nx, ii);
+          ok = 1;
+        }
       }
         
       MPI_Sendrecv(sendbuf, local_nrows, MPI_FLOAT, left, tag,
