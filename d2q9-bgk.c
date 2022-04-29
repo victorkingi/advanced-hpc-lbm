@@ -159,6 +159,7 @@ int main(int argc, char *argv[])
   t_speed* cells = NULL;                                                             /* grid containing fluid densities */
   t_speed* tmp_cells = NULL;                                                         /* scratch space */
   int* obstacles = NULL;                                                             /* grid indicating which cells are blocked */
+  float *global_av_vels = NULL;
   float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
@@ -220,6 +221,7 @@ int main(int argc, char *argv[])
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
+  *global_av_vels = (float *)malloc(sizeof(float) * params.maxIters);
 
   printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", end_col-start_col, local_nrows, hostname, rank, size);
 
@@ -444,6 +446,9 @@ int main(int argc, char *argv[])
     }
   }
 
+  MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
+               MPI_SUM, 0, MPI_COMM_WORLD);
+
   if (rank == 0) {
     /* Total/collate time stops here.*/
     gettimeofday(&timstr, NULL);
@@ -457,8 +462,8 @@ int main(int argc, char *argv[])
     printf("Elapsed Compute time:\t\t\t%.6lf (s)\n", comp_toc - comp_tic);
     printf("Elapsed Collate time:\t\t\t%.6lf (s)\n", col_toc - col_tic);
     printf("Elapsed Total time:\t\t\t%.6lf (s)\n", tot_toc - tot_tic);
-    write_values(params, cells, obstacles, av_vels);
-    finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
+    write_values(params, cells, obstacles, global_av_vels);
+    finalise(&params, &cells, &tmp_cells, &obstacles, &global_av_vels);
   }
 
   MPI_Finalize();
