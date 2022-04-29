@@ -178,7 +178,6 @@ int main(int argc, char *argv[])
   float *recvbuf;       /* buffer to hold received values */
   float *printbuf;      /* buffer to hold values for printing */
   int ii;
-  int remote_ncols;
   map_rank *ranks = NULL;
 
   /* parse the command line */
@@ -211,16 +210,17 @@ int main(int argc, char *argv[])
   tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   init_tic = tot_tic;
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
+  is_power_of_2 = check_power_of_2(params.nx);
+
+  calc_all_rank_sizes(size, params.ny, &ranks);
 
   int local_nrows = params.nx;
-  int local_ncols = calc_ncols_from_rank(params, rank, size);
+  start_col = ranks[rank].start_col;
+  end_col = ranks[rank].end_col;
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
 
-  remote_ncols = calc_ncols_from_rank(params, size-1, size); 
-  printbuf = (float*)malloc(sizeof(float) * (remote_ncols + 2) * 9);
-
-  printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", local_ncols, local_nrows, hostname, rank, size);
+  printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", end_col-start_col, local_nrows, hostname, rank, size);
 
   /* Init time stops here, compute time starts*/
   gettimeofday(&timstr, NULL);
@@ -228,12 +228,6 @@ int main(int argc, char *argv[])
   comp_tic = init_toc;
 
   accelerate_flow(params, cells, obstacles);
-  is_power_of_2 = check_power_of_2(params.nx);
-  calc_all_rank_sizes(size, params.ny, &ranks);
-
-  for (int i = 0; i < size; i++) {
-    printf("Rank %d, start_col %d, end_col %d\n", i, ranks[i].start_col, ranks[i].end_col);
-  }
 
   printf("start col %d, end col %d; right_col_node, %d, left_col_node %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
 
