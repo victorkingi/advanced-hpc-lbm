@@ -726,7 +726,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       }
     }
   }
-  return tot_u / (float)total_cells;
+  return tot_u / (float)tot_cells;
 }
 
 
