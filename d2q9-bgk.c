@@ -232,8 +232,6 @@ int main(int argc, char *argv[])
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
   global_av_vels = (float*)malloc(sizeof(float) * params.maxIters);
   local_vals = (timestep_return*)malloc(sizeof(timestep_return) * params.maxIters);
-  local_vals.tot_cells = (float)malloc(sizeof(float));
-  local_vals.tot_u = (float)malloc(sizeof(float));
 
   printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", end_col-start_col, local_nrows, hostname, rank, size);
 
