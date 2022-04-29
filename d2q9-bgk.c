@@ -254,8 +254,7 @@ int main(int argc, char *argv[])
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
-    printf("total_cells %d\n", local_tot_cells[tt]);
-
+    printf("total_cells %d\n", local_tot_cells[0]);
     /*
     ** halo exchange for the local grids:
     ** - first send to the left and receive from the right,
