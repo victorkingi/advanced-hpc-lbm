@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
   float *collate_buf;
   int ii;
   map_rank *ranks = NULL;
-  timestep_return *local_vals = NULL;
+  timestep_return local_vals;
 
   /* parse the command line */
   if (argc != 3)
@@ -231,7 +231,8 @@ int main(int argc, char *argv[])
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
   global_av_vels = (float*)malloc(sizeof(float) * params.maxIters);
-  local_vals = (timestep_return*)malloc(sizeof(timestep_return) * params.maxIters);
+  float local_tot_cells[params.maxIters];
+  float local_tot_u[params.maxIters];
 
   printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", end_col-start_col, local_nrows, hostname, rank, size);
 
@@ -246,9 +247,10 @@ int main(int argc, char *argv[])
 
   for (int tt = 0; tt < params.maxIters; tt++)
   {
-    local_vals[tt] = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
+    local_vals = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
+    local_tot_cells[tt] = local_vals.tot_cells;
+    local_tot_u[tt] = local_vals.tot_u;
     av_vels[tt] = 0;
-    printf("tot_cells %d, tot_u %d\n", local_vals[tt].tot_cells, local_vals[tt].tot_u);
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
@@ -413,6 +415,17 @@ int main(int argc, char *argv[])
   gettimeofday(&timstr, NULL);
   comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   col_tic = comp_toc;
+  float *global_tot_cells_each_timestep;
+  float *global_tot_u_each_timestep;
+
+  MPI_Reduce(local_tot_cells, global_tot_cells_each_timestep, params.maxIters, MPI_FLOAT,
+              MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Reduce(local_tot_u, global_tot_u_each_timestep, params.maxIters, MPI_FLOAT,
+              MPI_SUM, 0, MPI_COMM_WORLD);
+
+  if (rank == 0) {
+    printf("total_cells %d, tot_u %d \n", global_tot_cells_each_timestep[0], global_tot_u_each_timestep[0]);
+  }
 
   MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
