@@ -117,7 +117,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate(), rebound() & collision()
 */
-timestep timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col);
+timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col);
 int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles);
 int write_values(const t_param params, t_speed* restrict cells, int* restrict obstacles, float* restrict av_vels);
 
