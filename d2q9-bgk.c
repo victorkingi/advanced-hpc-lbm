@@ -55,7 +55,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include "mpi.h"
 
 #define NSPEEDS 9
 #define FINALSTATEFILE "final_state.dat"
@@ -92,8 +91,6 @@ typedef struct
 /*
 ** function prototypes
 */
-
-int calc_ncols_from_rank(const t_param params, int rank, int size);
 
 /* load params, allocate memory, load obstacles & initialise fluid particle densities */
 int initialise(const char *paramfile, const char *obstaclefile,
@@ -156,18 +153,6 @@ int main(int argc, char *argv[])
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
 
-  int remote_ncols;      /* number of columns apportioned to a remote rank */
-  int rank;              /* the rank of this process */
-  int left;              /* the rank of the process to the left */
-  int right;             /* the rank of the process to the right */
-  int size;              /* number of processes in the communicator */
-  int tag = 0;           /* scope for adding extra information to a message */
-  MPI_Status status;     /* struct used by MPI_Recv */
-  int flag;               /* for checking whether MPI_Init() has been called */
-  int strlen_;             /* length of a character array */
-  char hostname[MPI_MAX_PROCESSOR_NAME];  /* character array to hold hostname running process */
-  enum bool {FALSE,TRUE}; /* enumerated type: false = 0, true = 1 */ 
-
   /* parse the command line */
   if (argc != 3)
   {
@@ -179,31 +164,11 @@ int main(int argc, char *argv[])
     obstaclefile = argv[2];
   }
 
-   /* initialise our MPI environment */
-  MPI_Init( &argc, &argv );
-
-  /* check whether the initialisation was successful */
-  MPI_Initialized(&flag);
-  if ( flag != TRUE ) {
-    MPI_Abort(MPI_COMM_WORLD,EXIT_FAILURE);
-  }
-
-  MPI_Get_processor_name(hostname,&strlen_);
-  MPI_Comm_size( MPI_COMM_WORLD, &size );
-  MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-
-  right = (rank + 1) % size;
-  left = (rank == 0) ? (rank + size - 1) : (rank - 1);
-
   /* Total/init time starts here: initialise our data structures and load values from file */
   gettimeofday(&timstr, NULL);
   tot_tic = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   init_tic = tot_tic;
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
-
-  int local_nrows = params.nx;
-  int local_ncols = calc_ncols_from_rank(params, rank, size);
-  printf("local columns %d local_nrows %d; from host %s: process %d of %d\n", local_ncols, local_nrows, hostname, rank, size);
 
   /* Init time stops here, compute time starts*/
   gettimeofday(&timstr, NULL);
@@ -248,23 +213,7 @@ int main(int argc, char *argv[])
   write_values(params, cells, obstacles, av_vels);
   finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
 
-  /* finialise the MPI enviroment */
-  MPI_Finalize();
-
   return EXIT_SUCCESS;
-}
-
-int calc_ncols_from_rank(const t_param params, int rank, int size)
-{
-  int ncols;
-
-  ncols = params.ny / size;       /* integer division */
-  if ((params.ny % size) != 0) {  /* if there is a remainder */
-    if (rank == size - 1)
-      ncols += params.ny % size;  /* add remainder to last rank */
-  }
-  
-  return ncols;
 }
 
 int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles)
