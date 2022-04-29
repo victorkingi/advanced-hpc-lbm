@@ -287,7 +287,8 @@ int main(int argc, char *argv[])
               recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               MPI_COMM_WORLD, &status);
 
-      } else {
+      } 
+      else {
         // sending one column which is all rows in it having all 9 speeds
         for(ii=0; ii < local_nrows; ii++) {
           sendbuf[0 + (ii*9)] = cells->speed_0[ii + start_col * params.nx];
@@ -322,7 +323,7 @@ int main(int argc, char *argv[])
         }
       }
       
-      /* send to the right, receive from left */
+      /*// send to the right, receive from left 
       if (rank = size - 1) {
         // right doesn't exist hence no sending
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
@@ -388,6 +389,7 @@ int main(int argc, char *argv[])
           cells->speed_8[ii + (start_col - 1) * params.nx] = recvbuf[8 + (ii*9)];
         }
       }   
+     */
     }
 
     #ifdef DEBUG
