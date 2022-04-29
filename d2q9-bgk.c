@@ -134,7 +134,6 @@ void usage(const char *exe);
 
 /* global variable */
 unsigned int is_power_of_2;
-float total_cells;
 
 unsigned int check_power_of_2(unsigned int x) {
   unsigned int pow = 0;
