@@ -431,6 +431,11 @@ int calc_all_rank_sizes(int size, int ny)
   int work = ny / size;
   map_rank* ranks = (map_rank *)malloc(sizeof(map_rank));
 
+  for (int i = 0; i < size; i++) {
+    ranks[i].start_col = 0;
+    ranks[i].end_col = 0;
+  }
+
   if (ny % size == 0) {
     for (int i = 0; i < size; i++) {
       ranks[i].start_col = i * work;
