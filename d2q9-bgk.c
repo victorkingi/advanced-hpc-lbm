@@ -93,11 +93,6 @@ typedef struct {
     int end_col;
 } map_rank;
 
-typedef struct {
-    float tot_cells;
-    float tot_u;
-} timestep_return;
-
 
 /*
 ** function prototypes
@@ -117,7 +112,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate(), rebound() & collision()
 */
-timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col);
+float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col);
 int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles);
 int write_values(const t_param params, t_speed* restrict cells, int* restrict obstacles, float* restrict av_vels);
 
@@ -139,6 +134,7 @@ void usage(const char *exe);
 
 /* global variable */
 unsigned int is_power_of_2;
+float total_cells;
 
 unsigned int check_power_of_2(unsigned int x) {
   unsigned int pow = 0;
@@ -165,6 +161,7 @@ int main(int argc, char *argv[])
   t_speed* tmp_cells = NULL;                                                         /* scratch space */
   int* obstacles = NULL;                                                             /* grid indicating which cells are blocked */
   float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
+  float *global_av_vels = NULL;
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
 
@@ -216,6 +213,7 @@ int main(int argc, char *argv[])
   init_tic = tot_tic;
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
   is_power_of_2 = check_power_of_2(params.nx);
+  total_cells = (params.nx - 1) * (params.ny - 1);
 
   calc_all_rank_sizes(size, params.ny, &ranks);
 
@@ -225,6 +223,7 @@ int main(int argc, char *argv[])
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
+  global_av_vels = (float*)malloc(sizeof(float) * params.maxIters);
 
   printf("Local columns %d, local rows %d; from host %s: process %d of %d\n", end_col-start_col, local_nrows, hostname, rank, size);
 
@@ -239,9 +238,7 @@ int main(int argc, char *argv[])
 
   for (int tt = 0; tt < params.maxIters; tt++)
   {
-    timestep_return my_vals = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
-    printf("total_cells %d, tot_u %d\n", my_vals.tot_cells, my_vals.tot_u);
-    av_vels[tt] = 0;
+    av_vels[tt] = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
@@ -407,8 +404,6 @@ int main(int argc, char *argv[])
   comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   col_tic = comp_toc;
 
-  float *global_av_vels = av_vels;
-
   MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
 
@@ -551,7 +546,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   return EXIT_SUCCESS;
 }
 
-timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col)
+float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles, int start_col, int end_col)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
   float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
@@ -731,10 +726,7 @@ timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed*
       }
     }
   }
-  timestep_return vals;
-  vals.tot_cells = (float)tot_cells;
-  vals.tot_u = tot_u;
-  return vals;
+  return tot_u / (float)total_cells;
 }
 
 
@@ -777,6 +769,7 @@ float av_velocity(const t_param params, t_speed* restrict cells, int* restrict o
       }
     }
   }
+
   return tot_u / (float)tot_cells;
 }
 
