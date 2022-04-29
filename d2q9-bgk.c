@@ -212,7 +212,6 @@ int main(int argc, char *argv[])
   init_tic = tot_tic;
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
   is_power_of_2 = check_power_of_2(params.nx);
-  total_cells = (params.nx - 1) * (params.ny - 1);
 
   calc_all_rank_sizes(size, params.ny, &ranks);
 
