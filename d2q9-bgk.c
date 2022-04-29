@@ -412,8 +412,8 @@ int main(int argc, char *argv[])
         printf("tot density: %.12E\n", total_density(params, cells));
     #endif
   }
-  printf("total_cells %d\n", local_tot_cells[0]);
   printf("total_u %d\n", local_tot_u[0]);
+  printf("total_cells %d\n", local_tot_cells[0]);
   
   MPI_Reduce(local_tot_cells, global_tot_cells, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
