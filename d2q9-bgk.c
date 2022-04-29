@@ -194,8 +194,8 @@ int main(int argc, char *argv[])
   MPI_Comm_size( MPI_COMM_WORLD, &size );
   MPI_Comm_rank( MPI_COMM_WORLD, &rank );
 
-  right = (rank + 1) % size;
-  left = (rank == 0) ? (rank + size - 1) : (rank - 1);
+  right = (rank == size - 1) ? MPI_PROC_NULL : (rank + 1);
+  left = (rank == 0) ? MPI_PROC_NULL : (rank - 1);
 
 
   /* Total/init time starts here: initialise our data structures and load values from file */
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
       /* send to the left, receive from right */
       if (rank == 0) {
         // left doesn't exist hence no sending
-        MPI_Sendrecv(MPI_PROC_NULL, local_nrows * 9, MPI_FLOAT, left, tag,
+        MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
             recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
             MPI_COMM_WORLD, &status);
         
@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
         }
         
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
-              MPI_PROC_NULL, local_nrows * 9, MPI_FLOAT, right, tag,
+              recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               MPI_COMM_WORLD, &status);
 
       } else {
@@ -316,7 +316,7 @@ int main(int argc, char *argv[])
       /* send to the right, receive from left */
       if (rank = size - 1) {
         // right doesn't exist hence no sending
-        MPI_Sendrecv(MPI_PROC_NULL, local_nrows * 9, MPI_FLOAT, right, tag,
+        MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               recvbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               MPI_COMM_WORLD, &status);
 
@@ -347,7 +347,7 @@ int main(int argc, char *argv[])
         }
 
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
-              MPI_PROC_NULL, local_nrows * 9, MPI_FLOAT, left, tag,
+              recvbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               MPI_COMM_WORLD, &status);
 
       } else {
