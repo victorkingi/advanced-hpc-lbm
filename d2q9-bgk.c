@@ -445,9 +445,20 @@ int main(int argc, char *argv[])
       MPI_Send(collate_buf, local_nrows * 9, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
     }
   }
+  if (rank == 0) {
+     for(int i=0; i<params.maxIters; i++) {
+      printf("Before: %d \n", global_av_vels[i]);
+     }
+  }
 
   MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
                MPI_SUM, 0, MPI_COMM_WORLD);
+
+  if (rank == 0) {
+     for(int i=0; i<params.maxIters; i++) {
+      printf("After: %d \n", global_av_vels[i]);
+     }
+  }
 
   if (rank == 0) {
     /* Total/collate time stops here.*/
