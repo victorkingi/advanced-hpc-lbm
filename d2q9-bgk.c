@@ -314,8 +314,8 @@ int main(int argc, char *argv[])
         }
       }
       
-      /*// send to the right, receive from left 
-      if (rank = size - 1) {
+      // send to the right, receive from left 
+      if (rank == size - 1) {
         // right doesn't exist hence no sending
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               recvbuf, local_nrows * 9, MPI_FLOAT, left, tag,
@@ -379,8 +379,7 @@ int main(int argc, char *argv[])
           cells->speed_7[ii + (start_col - 1) * params.nx] = recvbuf[7 + (ii*9)]; 
           cells->speed_8[ii + (start_col - 1) * params.nx] = recvbuf[8 + (ii*9)];
         }
-      }   
-     */
+      }
     }
 
     #ifdef DEBUG
