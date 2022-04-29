@@ -724,7 +724,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       }
     }
   }
-  printf("%d\n", tot_cells);
+  printf("%d\n", tot_u);
   return tot_u / (float)tot_cells;
 }
 
