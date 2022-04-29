@@ -249,23 +249,6 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   return EXIT_SUCCESS;
 }
 
-int bitwise_mul_int(unsigned int *y, const int *x) {
-  if (!is_power_of_2) return *y*(*x);
-  unsigned int pow = 0;
-  unsigned int result = *x;
-  while (result != 1)
-  {
-    result = result >> 1;
-    pow++;
-  }
-  return *y << pow;
-}
-
-unsigned int bitwise_mod_int(unsigned int *y, const int *x) {
-  if (!is_power_of_2) return *y % *x;
-  return *y & (*x - 1);
-}
-
 float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, int* restrict obstacles)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
@@ -278,6 +261,8 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   /* compute weighting factors */
   float w1_ = params.density * params.accel / 9.f;
   float w2_ = params.density * params.accel / 36.f;
+
+  __assume_aligned(obstacles, 64);
 
   __assume_aligned(cells->speed_0, 64);
   __assume_aligned(cells->speed_1, 64);
@@ -298,46 +283,48 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume_aligned(tmp_cells->speed_6, 64);
   __assume_aligned(tmp_cells->speed_7, 64);
   __assume_aligned(tmp_cells->speed_8, 64);
+  __assume((params.nx)%2==0);
+  __assume((params.ny)%2==0);
 
   #pragma omp simd reduction(+:tot_cells, tot_u)
-  for (unsigned int jj = 0; jj < params.ny; jj++)
+  for (int jj = 0; jj < params.ny; jj++)
   {
-    for (unsigned int ii = 0; ii < params.nx; ii++)
+    for (int ii = 0; ii < params.nx; ii++)
     {
-      unsigned int mul_val = bitwise_mul_int(&jj, &params.nx); 
-      unsigned int is_obstacle = obstacles[mul_val + ii];
-      unsigned int jj_1 = jj+1;
-      unsigned int ii_1 = ii+1;
+      __assume((obstacles[jj*params.nx + ii])<2);
+      unsigned int y_n = (jj+1 == params.ny) ? 0 : (jj+1);
+      unsigned int x_e = (ii+1 == params.nx) ? 0 : (ii+1);
+      unsigned int y_s = (jj == 0) ? (params.ny - 1) : (jj - 1);
+      unsigned int x_w = (ii == 0) ? (params.nx - 1) : (ii - 1);
+      __assume(y_n < params.ny);
+      __assume(x_e < params.nx);
+      __assume(y_s < params.ny - 1);
+      __assume(x_w < params.nx - 1);
 
-      unsigned int y_n = bitwise_mod_int(&jj_1, &params.ny);
-      unsigned int x_e = bitwise_mod_int(&ii_1, &params.nx);
-      unsigned int y_s = (jj == 0) ? (jj + params.ny - 1) : (jj - 1);
-      unsigned int x_w = (ii == 0) ? (ii + params.nx - 1) : (ii - 1);
-
-      register float speed_0 = cells->speed_0[ii + mul_val];   /* central cell, no movement */
-      register float speed_1 = cells->speed_1[x_w + mul_val];  /* east */
-      register float speed_2 = cells->speed_2[ii + bitwise_mul_int(&y_s, &params.nx)];  /* north */
-      register float speed_3 = cells->speed_3[x_e + mul_val];  /* west */
-      register float speed_4 = cells->speed_4[ii + bitwise_mul_int(&y_n, &params.nx)];  /* south */
-      register float speed_5 = cells->speed_5[x_w + bitwise_mul_int(&y_s, &params.nx)]; /* north-east */
-      register float speed_6 = cells->speed_6[x_e + bitwise_mul_int(&y_s, &params.nx)]; /* north-west */
-      register float speed_7 = cells->speed_7[x_e + bitwise_mul_int(&y_n, &params.nx)]; /* south-west */
-      register float speed_8 = cells->speed_8[x_w + bitwise_mul_int(&y_n, &params.nx)]; /* south-east */
+      register float speed_0 = cells->speed_0[ii + jj*params.nx];   /* central cell, no movement */
+      register float speed_1 = cells->speed_1[x_w + jj*params.nx];  /* east */
+      register float speed_2 = cells->speed_2[ii + y_s*params.nx];  /* north */
+      register float speed_3 = cells->speed_3[x_e + jj*params.nx];  /* west */
+      register float speed_4 = cells->speed_4[ii + y_n*params.nx];  /* south */
+      register float speed_5 = cells->speed_5[x_w + y_s*params.nx]; /* north-east */
+      register float speed_6 = cells->speed_6[x_e + y_s*params.nx]; /* north-west */
+      register float speed_7 = cells->speed_7[x_e + y_n*params.nx]; /* south-west */
+      register float speed_8 = cells->speed_8[x_w + y_n*params.nx]; /* south-east */
 
       /**If cell contains an obstacle rebound else collision occurs */
-      if (is_obstacle)
+      if (obstacles[jj*params.nx + ii])
       {
         /* called after propagate, so taking values from scratch space
         ** mirroring, and writing into main grid */
 
-        tmp_cells->speed_1[ii + mul_val] = speed_3;
-        tmp_cells->speed_2[ii + mul_val] = speed_4;
-        tmp_cells->speed_3[ii + mul_val] = speed_1;
-        tmp_cells->speed_4[ii + mul_val] = speed_2;
-        tmp_cells->speed_5[ii + mul_val] = speed_7;
-        tmp_cells->speed_6[ii + mul_val] = speed_8;
-        tmp_cells->speed_7[ii + mul_val] = speed_5;
-        tmp_cells->speed_8[ii + mul_val] = speed_6;
+        tmp_cells->speed_1[ii + jj*params.nx] = speed_3;
+        tmp_cells->speed_2[ii + jj*params.nx] = speed_4;
+        tmp_cells->speed_3[ii + jj*params.nx] = speed_1;
+        tmp_cells->speed_4[ii + jj*params.nx] = speed_2;
+        tmp_cells->speed_5[ii + jj*params.nx] = speed_7;
+        tmp_cells->speed_6[ii + jj*params.nx] = speed_8;
+        tmp_cells->speed_7[ii + jj*params.nx] = speed_5;
+        tmp_cells->speed_8[ii + jj*params.nx] = speed_6;
 
       } else {
         register float local_density = speed_0 + speed_1 + speed_2 + speed_3 + speed_4 + speed_5 + speed_6 + speed_7 + speed_8;
@@ -394,7 +381,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
 
         d_equ = w2 * local_density * (1.f + (u_x - u_y) / c_sq
                                           + ((u_x - u_y) * (u_x - u_y)) / (2.f * c_sq * c_sq)
-                                          - u_sq / (2.f * c_sq));
+                                          - u_sq / (2.f * c_sq));         
         speed_8 = speed_8 + params.omega * (d_equ - speed_8);                                  
         
         local_density = speed_0 + speed_1 + speed_2 + speed_3 + speed_4 + speed_5 + speed_6 + speed_7 + speed_8;
@@ -413,7 +400,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
         /* if the cell is not occupied and
         ** we don't send a negative density */
         if (jj == params.ny-2 
-        && !is_obstacle
+        && !obstacles[jj*params.nx + ii]
         && (speed_3 - w1_) > 0.f 
         && (speed_6 - w2_) > 0.f 
         && (speed_7 - w2_) > 0.f)
@@ -429,15 +416,15 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
         }
 
         /* write back new state from speed variables to tmp_cells ready for next iteration */
-        tmp_cells->speed_0[ii + mul_val] = speed_0;
-        tmp_cells->speed_1[ii + mul_val] = speed_1;
-        tmp_cells->speed_2[ii + mul_val] = speed_2;
-        tmp_cells->speed_3[ii + mul_val] = speed_3;
-        tmp_cells->speed_4[ii + mul_val] = speed_4;
-        tmp_cells->speed_5[ii + mul_val] = speed_5;
-        tmp_cells->speed_6[ii + mul_val] = speed_6;
-        tmp_cells->speed_7[ii + mul_val] = speed_7;
-        tmp_cells->speed_8[ii + mul_val] = speed_8;
+        tmp_cells->speed_0[ii + jj*params.nx] = speed_0;
+        tmp_cells->speed_1[ii + jj*params.nx] = speed_1;
+        tmp_cells->speed_2[ii + jj*params.nx] = speed_2;
+        tmp_cells->speed_3[ii + jj*params.nx] = speed_3;
+        tmp_cells->speed_4[ii + jj*params.nx] = speed_4;
+        tmp_cells->speed_5[ii + jj*params.nx] = speed_5;
+        tmp_cells->speed_6[ii + jj*params.nx] = speed_6;
+        tmp_cells->speed_7[ii + jj*params.nx] = speed_7;
+        tmp_cells->speed_8[ii + jj*params.nx] = speed_8;
 
       }
     }
