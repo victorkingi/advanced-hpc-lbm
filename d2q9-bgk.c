@@ -243,8 +243,9 @@ int main(int argc, char *argv[])
     ** - exchange using MPI_Sendrecv()
     ** - unpack values from the recieve buffer into the grid
     */
+    /*
     if (size != 1) {
-      /* send to the left, receive from right */
+      // send to the left, receive from right
       if (rank == 0) {
         // left doesn't exist hence no sending
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
@@ -313,7 +314,7 @@ int main(int argc, char *argv[])
         }
       }
       
-      /* send to the right, receive from left */
+      // send to the right, receive from left
       if (rank = size - 1) {
         // right doesn't exist hence no sending
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
@@ -381,6 +382,7 @@ int main(int argc, char *argv[])
       }   
     }
 
+    */
     #ifdef DEBUG
         printf("==timestep: %d==\n", tt);
         printf("av velocity: %.12E\n", av_vels[tt]);
