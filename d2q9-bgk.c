@@ -111,7 +111,7 @@ int initialise(const char *paramfile, const char *obstaclefile,
 ** timestep calls, in order, the functions:
 ** accelerate_flow(), propagate(), rebound() & collision()
 */
-float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, unsigned int* restrict obstacles);
+float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, unsigned int* restrict obstacles, int local_ncols, int local_nrows);
 int accelerate_flow(const t_param params, t_speed* restrict cells, unsigned int* restrict obstacles);
 int write_values(const t_param params, t_speed* restrict cells, unsigned int* restrict obstacles, float* restrict av_vels);
 
@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
 
     /* send to the left, receive from right */
     for(ii=0;ii<local_nrows;ii++) {
-      _temp[0] = w->speed_0[ii + 1 * local_nrows]; //TODO should be different from 1 maybe
+      _temp[0] = w->speed_0[ii + 1 * local_nrows];
       _temp[1] = w->speed_1[ii + 1 * local_nrows];
       _temp[2] = w->speed_2[ii + 1 * local_nrows];
       _temp[3] = w->speed_3[ii + 1 * local_nrows];
@@ -414,31 +414,16 @@ int main(int argc, char *argv[])
     ** looping extents depend on rank, as we don't
     ** want to overwrite any boundary conditions
     */
-    for(ii=1;ii<local_nrows-1;ii++) {
-      if(rank == 0) {
-        start_col = 2;
-        end_col = local_ncols;
-      }
-      else if(rank == size -1) {
-        start_col = 1;
-        end_col = local_ncols - 1;
-      }
-      else {
-        start_col = 1;
-        end_col = local_ncols;
-      }
-      for(jj=start_col;jj<end_col + 1;jj++) {
-        //av_vels[iter] = timestep(params, u, w, obstacles);
-        t_speed* temp = u;
-        u = w;
-        w = temp;
-        #ifdef DEBUG
-            printf("==timestep: %d==\n", iter);
-            printf("av velocity: %.12E\n", av_vels[iter]);
-            printf("tot density: %.12E\n", total_density(params, cells));
-        #endif
-      }
-    }
+    
+    av_vels[iter] = timestep(params, u, w, obstacles, local_ncols, local_nrows);
+    t_speed* temp = u;
+    u = w;
+    w = temp;
+    #ifdef DEBUG
+        printf("==timestep: %d==\n", iter);
+        printf("av velocity: %.12E\n", av_vels[iter]);
+        printf("tot density: %.12E\n", total_density(params, cells));
+    #endif
   }
   
   /*
@@ -580,7 +565,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, unsigned int*
   return EXIT_SUCCESS;
 }
 
-float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, unsigned int* restrict obstacles)
+float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict tmp_cells, unsigned int* restrict obstacles, int local_ncols, int local_nrows)
 {
   unsigned int tot_cells = 0; /* no. of cells used in calculation */
   float tot_u = 0.f;       /* accumulated magnitudes of velocity for each cell */
@@ -617,9 +602,9 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
   __assume((params.nx)%2==0);
   __assume((params.ny)%2==0);
 
-  for (int jj = 0; jj < params.ny; jj++)
+  for (int jj = 1; jj < (local_ncols + 1); jj++)
   {
-    for (int ii = 0; ii < params.nx; ii++)
+    for (int ii = 0; ii < local_nrows; ii++)
     {
       __assume((obstacles[jj*params.nx + ii])<2);
       unsigned int y_n = (jj+1 == params.ny) ? 0 : (jj+1);
