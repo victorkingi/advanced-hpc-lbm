@@ -240,9 +240,6 @@ int main(int argc, char *argv[])
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
-    if (av_vels[tt]) {
-      printf("av_vels[tt] %d\n", av_vels[tt]);
-    }
 
     /*
     ** halo exchange for the local grids:
@@ -398,6 +395,12 @@ int main(int argc, char *argv[])
         printf("av velocity: %.12E\n", av_vels[tt]);
         printf("tot density: %.12E\n", total_density(params, cells));
     #endif
+  }
+
+  for (int tt = 0; tt < params.maxIters; tt++) {
+    if (av_vels[tt]) {
+      printf("av_vels[tt] %d\n", av_vels[tt]);
+    }
   }
 
   /* Compute time stops here, collate time starts*/
