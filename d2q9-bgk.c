@@ -412,12 +412,12 @@ int main(int argc, char *argv[])
         printf("tot density: %.12E\n", total_density(params, cells));
     #endif
   }
+  printf("total_cells %d\n", local_tot_cells[0]);
 
   /* Compute time stops here, collate time starts*/
   gettimeofday(&timstr, NULL);
   comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   col_tic = comp_toc;
-  printf("total_cells %d\n", local_tot_cells[0]);
 
   MPI_Reduce(local_tot_cells, global_tot_cells, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
