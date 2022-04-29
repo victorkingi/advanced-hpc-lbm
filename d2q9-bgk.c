@@ -410,7 +410,6 @@ int main(int argc, char *argv[])
         printf("tot density: %.12E\n", total_density(params, cells));
     #endif
   }
-  printf("total_cells %d\n", local_tot_cells[0]);
 
   /* Compute time stops here, collate time starts*/
   gettimeofday(&timstr, NULL);
@@ -418,6 +417,7 @@ int main(int argc, char *argv[])
   col_tic = comp_toc;
   float *global_tot_cells_each_timestep = (float *)malloc(sizeof(float) * params.maxIters);
   float *global_tot_u_each_timestep = (float *)malloc(sizeof(float) * params.maxIters);
+  printf("total_cells %d\n", local_tot_cells[0]);
 
   MPI_Reduce(local_tot_cells, global_tot_cells_each_timestep, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
