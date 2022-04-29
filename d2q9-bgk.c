@@ -415,16 +415,14 @@ int main(int argc, char *argv[])
   
   MPI_Reduce(local_tot_cells, global_tot_cells, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
-  printf("total_cells %d\n", global_tot_cells[0]);
+  MPI_Reduce(local_tot_u, global_tot_u, params.maxIters, MPI_FLOAT,
+              MPI_SUM, 0, MPI_COMM_WORLD);
+  printf("total_u %d\n", global_tot_u[0]);
 
   /* Compute time stops here, collate time starts*/
   gettimeofday(&timstr, NULL);
   comp_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
   col_tic = comp_toc;
-
-  MPI_Reduce(local_tot_u, global_tot_u, params.maxIters, MPI_FLOAT,
-              MPI_SUM, 0, MPI_COMM_WORLD);
-
 
   MPI_Reduce(av_vels, global_av_vels, params.maxIters, MPI_FLOAT,
               MPI_SUM, 0, MPI_COMM_WORLD);
