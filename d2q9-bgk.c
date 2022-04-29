@@ -235,6 +235,7 @@ int main(int argc, char *argv[])
   for (int tt = 0; tt < params.maxIters; tt++)
   {
     av_vels[tt] = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
+    //av_vels[tt]
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
@@ -724,7 +725,7 @@ float timestep(const t_param params, t_speed* restrict cells, t_speed* restrict 
       }
     }
   }
-  printf("total_cells %d, tot_u %d\n", (float)tot_cells, tot_u);
+  printf("col: %d, total_cells %d, tot_u %d\n", start_col, (float)tot_cells, tot_u);
   return tot_u / (float)tot_cells;
 }
 
