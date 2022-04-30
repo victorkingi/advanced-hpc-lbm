@@ -483,20 +483,20 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
   unsigned int start = 0;
   unsigned int end = 0;
   unsigned int work = ny / size;
-  *ranks = (map_rank *)malloc(sizeof(map_rank) * 1);
+  (*ranks) = (map_rank *)malloc(sizeof(map_rank) * 1);
   (*ranks)->start_col = (unsigned int *)malloc(sizeof(unsigned int) * size);
   (*ranks)->end_col = (unsigned int *)malloc(sizeof(unsigned int) * size);
 
   if (ny % size == 0) {
     #pragma omp simd
     for (int i = 0; i < size; i++) {
-      (*ranks).start_col[i] = i * work;
-      (*ranks).end_col[i] = (i * work) + work;
+      (*ranks)->start_col[i] = i * work;
+      (*ranks)->end_col[i] = (i * work) + work;
     }
   } else {
     #pragma omp simd reduction(+:allocated)
     for (int i = 0; i < size; i++) {
-      (*ranks).start_col[i] = i * work;
+      (*ranks)->start_col[i] = i * work;
       (*ranks).end_col[i] = (i * work) + work;
       allocated += work;
     }
@@ -509,8 +509,8 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
 
         // update new end columns for next ranks
         for (int k = i+1; k < size; k++) {
-          (*ranks).start_col[k] = (*ranks).end_col[k-1];
-          (*ranks).end_col[k] += 1;
+          (*ranks)->start_col[k] = (*ranks)->end_col[k-1];
+          (*ranks)->end_col[k] += 1;
         }
       }
     }
