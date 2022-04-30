@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
   end_col = ranks->end_col[rank];
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
-  collate_buf = (float*)malloc(sizeof(float) * local_nrows * ((end_col - start_col) + 10) * 9);
+  collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
 
   #ifdef DEBUG
     printf("start %d, end %d; right %d, left %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
@@ -410,21 +410,21 @@ int main(int argc, char *argv[])
     // receive columns from other ranks, update local cells with this values
     #pragma omp simd
     for (int k = 1; k < size; k++) {
-      // receive columns to buffer
-      MPI_Recv(collate_buf, (ranks[k].end_col - ranks[k].start_col) * local_nrows * 9, MPI_FLOAT, k, tag, MPI_COMM_WORLD, &status);
-
       for (int col = ranks->start_col[k]; col < ranks->end_col[k]; col++) {
+        // for each column, receive it to a buffer
+        MPI_Recv(collate_buf, local_nrows * 9, MPI_FLOAT, k, tag, MPI_COMM_WORLD, &status);
+
         #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
-          cells->speed_0[ii + col * params.nx] = collate_buf[0 + ((col*local_nrows + ii) * 9)];
-          cells->speed_1[ii + col * params.nx] = collate_buf[1 + ((col*local_nrows + ii) * 9)];
-          cells->speed_2[ii + col * params.nx] = collate_buf[2 + ((col*local_nrows + ii) * 9)]; 
-          cells->speed_3[ii + col * params.nx] = collate_buf[3 + ((col*local_nrows + ii) * 9)]; 
-          cells->speed_4[ii + col * params.nx] = collate_buf[4 + ((col*local_nrows + ii) * 9)]; 
-          cells->speed_5[ii + col * params.nx] = collate_buf[5 + ((col*local_nrows + ii) * 9)]; 
-          cells->speed_6[ii + col * params.nx] = collate_buf[6 + ((col*local_nrows + ii) * 9)]; 
-          cells->speed_7[ii + col * params.nx] = collate_buf[7 + ((col*local_nrows + ii) * 9)]; 
-          cells->speed_8[ii + col * params.nx] = collate_buf[8 + ((col*local_nrows + ii) * 9)];
+          cells->speed_0[ii + col * params.nx] = collate_buf[0 + (ii*9)];
+          cells->speed_1[ii + col * params.nx] = collate_buf[1 + (ii*9)];
+          cells->speed_2[ii + col * params.nx] = collate_buf[2 + (ii*9)]; 
+          cells->speed_3[ii + col * params.nx] = collate_buf[3 + (ii*9)]; 
+          cells->speed_4[ii + col * params.nx] = collate_buf[4 + (ii*9)]; 
+          cells->speed_5[ii + col * params.nx] = collate_buf[5 + (ii*9)]; 
+          cells->speed_6[ii + col * params.nx] = collate_buf[6 + (ii*9)]; 
+          cells->speed_7[ii + col * params.nx] = collate_buf[7 + (ii*9)]; 
+          cells->speed_8[ii + col * params.nx] = collate_buf[8 + (ii*9)];
         }
       }
     }
@@ -446,18 +446,18 @@ int main(int argc, char *argv[])
     for (int col = start_col; col < end_col; col++) {
       #pragma omp simd
       for (ii=0; ii < local_nrows; ii++) {
-        collate_buf[0 + ((col*local_nrows + ii) * 9)] = cells->speed_0[ii + col * params.nx];
-        collate_buf[1 + ((col*local_nrows + ii) * 9)] = cells->speed_1[ii + col * params.nx];
-        collate_buf[2 + ((col*local_nrows + ii) * 9)] = cells->speed_2[ii + col * params.nx];
-        collate_buf[3 + ((col*local_nrows + ii) * 9)] = cells->speed_3[ii + col * params.nx];
-        collate_buf[4 + ((col*local_nrows + ii) * 9)] = cells->speed_4[ii + col * params.nx];
-        collate_buf[5 + ((col*local_nrows + ii) * 9)] = cells->speed_5[ii + col * params.nx];
-        collate_buf[6 + ((col*local_nrows + ii) * 9)] = cells->speed_6[ii + col * params.nx];
-        collate_buf[7 + ((col*local_nrows + ii) * 9)] = cells->speed_7[ii + col * params.nx];
-        collate_buf[8 + ((col*local_nrows + ii) * 9)] = cells->speed_8[ii + col * params.nx];
+        collate_buf[0 + (ii*9)] = cells->speed_0[ii + col * params.nx];
+        collate_buf[1 + (ii*9)] = cells->speed_1[ii + col * params.nx];
+        collate_buf[2 + (ii*9)] = cells->speed_2[ii + col * params.nx];
+        collate_buf[3 + (ii*9)] = cells->speed_3[ii + col * params.nx];
+        collate_buf[4 + (ii*9)] = cells->speed_4[ii + col * params.nx];
+        collate_buf[5 + (ii*9)] = cells->speed_5[ii + col * params.nx];
+        collate_buf[6 + (ii*9)] = cells->speed_6[ii + col * params.nx];
+        collate_buf[7 + (ii*9)] = cells->speed_7[ii + col * params.nx];
+        collate_buf[8 + (ii*9)] = cells->speed_8[ii + col * params.nx];
       }
+      MPI_Send(collate_buf, local_nrows * 9, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
     }
-    MPI_Send(collate_buf, (end_col - start_col) * local_nrows * 9, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
   }
 
   MPI_Finalize();
