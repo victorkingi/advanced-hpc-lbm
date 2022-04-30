@@ -483,7 +483,7 @@ void calc_all_rank_sizes(int size, int ny, map_rank* restrict ranks)
   unsigned int start = 0;
   unsigned int end = 0;
   unsigned int work = ny / size;
-  (*ranks) = (map_rank)malloc(sizeof(map_rank) * 1);
+  ranks = (map_rank)malloc(sizeof(map_rank) * 1);
 
   if (ny % size == 0) {
     #pragma omp simd
