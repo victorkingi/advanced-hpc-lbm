@@ -227,7 +227,6 @@ int main(int argc, char *argv[])
 
   accelerate_flow(params, cells, obstacles);
 
-  #pragma omp simd
   for (int tt = 0; tt < params.maxIters; tt++)
   {
     local_vals = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
@@ -405,6 +404,7 @@ int main(int argc, char *argv[])
               MPI_SUM, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
+    #pragma omp simd aligned(av_vels[:1])
     for (int tt = 0; tt < params.maxIters; tt++) {
       av_vels[tt] = global_tot_u[tt] / global_tot_cells[tt];
     }
