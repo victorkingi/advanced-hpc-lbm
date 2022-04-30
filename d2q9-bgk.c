@@ -216,6 +216,7 @@ int main(int argc, char *argv[])
   #ifdef DEBUG
     printf("start %d, end %d; right %d, left %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
   #endif
+  printf("Total ranks %d\n", size);
   
   /* Init time stops here, compute time starts*/
   gettimeofday(&timstr, NULL);
