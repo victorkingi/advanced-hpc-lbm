@@ -1036,10 +1036,9 @@ int write_values(const t_param params, t_speed* restrict cells, int* restrict ob
     die("could not open file output file", __LINE__, __FILE__);
   }
 
-  for (int jj = 0; jj < params.ny; jj++)
-  {
-    for (int ii = 0; ii < params.nx; ii++)
-    {
+  #pragma omp simd collapse(2)
+  for (int jj = 0; jj < params.ny; jj++) {
+    for (int ii = 0; ii < params.nx; ii++) {
       /* an occupied cell */
       if (obstacles[ii + jj * params.nx])
       {
