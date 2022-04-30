@@ -227,8 +227,8 @@ int main(int argc, char *argv[])
 
   accelerate_flow(params, cells, obstacles);
 
-  for (int tt = 0; tt < params.maxIters; tt++)
-  {
+  #pragma omp simd
+  for (int tt = 0; tt < params.maxIters; tt++) {
     local_vals = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
     local_tot_cells[tt] = local_vals.tot_cells;
     local_tot_u[tt] = local_vals.tot_u;
@@ -253,7 +253,8 @@ int main(int argc, char *argv[])
         MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
             recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
             MPI_COMM_WORLD, &status);
-      
+
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           cells->speed_0[ii + end_col * params.nx] = recvbuf[0 + (ii*9)];
           cells->speed_1[ii + end_col * params.nx] = recvbuf[1 + (ii*9)];
@@ -268,6 +269,7 @@ int main(int argc, char *argv[])
 
       } else if (rank == size - 1) {
         // right doesn't exist hence no receiving from right
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           sendbuf[0 + (ii*9)] = cells->speed_0[ii + start_col * params.nx];
           sendbuf[1 + (ii*9)] = cells->speed_1[ii + start_col * params.nx];
@@ -288,6 +290,7 @@ int main(int argc, char *argv[])
       } 
       else {
         // sending one column which is all rows in it having all 9 speeds
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           sendbuf[0 + (ii*9)] = cells->speed_0[ii + start_col * params.nx];
           sendbuf[1 + (ii*9)] = cells->speed_1[ii + start_col * params.nx];
@@ -304,6 +307,7 @@ int main(int argc, char *argv[])
               recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               MPI_COMM_WORLD, &status);
         
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           cells->speed_0[ii + end_col * params.nx] = recvbuf[0 + (ii*9)];
           cells->speed_1[ii + end_col * params.nx] = recvbuf[1 + (ii*9)];
@@ -324,6 +328,7 @@ int main(int argc, char *argv[])
               recvbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               MPI_COMM_WORLD, &status);
 
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           cells->speed_0[ii + (start_col - 1) * params.nx] = recvbuf[0 + (ii*9)];
           cells->speed_1[ii + (start_col - 1) * params.nx] = recvbuf[1 + (ii*9)];
@@ -338,6 +343,7 @@ int main(int argc, char *argv[])
 
       } else if (rank == 0) {
         // left doesn't exist hence no receiving from left
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           sendbuf[0 + (ii*9)] = cells->speed_0[ii + (end_col - 1) * params.nx];
           sendbuf[1 + (ii*9)] = cells->speed_1[ii + (end_col - 1) * params.nx];
@@ -355,6 +361,7 @@ int main(int argc, char *argv[])
               MPI_COMM_WORLD, &status);
 
       } else {
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           sendbuf[0 + (ii*9)] = cells->speed_0[ii + (end_col - 1) * params.nx];
           sendbuf[1 + (ii*9)] = cells->speed_1[ii + (end_col - 1) * params.nx];
@@ -371,6 +378,7 @@ int main(int argc, char *argv[])
               recvbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               MPI_COMM_WORLD, &status);
 
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           cells->speed_0[ii + (start_col - 1) * params.nx] = recvbuf[0 + (ii*9)];
           cells->speed_1[ii + (start_col - 1) * params.nx] = recvbuf[1 + (ii*9)];
@@ -410,12 +418,13 @@ int main(int argc, char *argv[])
     }
 
     // receive columns from other ranks, update local cells with this values
+    #pragma omp simd
     for (int k = 1; k < size; k++) {
-      int remote_ncols = ranks[k].end_col - ranks[k].start_col;
       for (int col = ranks[k].start_col; col < ranks[k].end_col; col++) {
         // for each column, receive it to a buffer
         MPI_Recv(collate_buf, local_nrows * 9, MPI_FLOAT, k, tag, MPI_COMM_WORLD, &status);
 
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           cells->speed_0[ii + col * params.nx] = collate_buf[0 + (ii*9)];
           cells->speed_1[ii + col * params.nx] = collate_buf[1 + (ii*9)];
@@ -444,6 +453,7 @@ int main(int argc, char *argv[])
     write_values(params, cells, obstacles, av_vels);
 
   } else {
+    #pragma omp simd
     for (int col = start_col; col < end_col; col++) {
       for (ii=0; ii < local_nrows; ii++) {
         collate_buf[0 + (ii*9)] = cells->speed_0[ii + col * params.nx];
@@ -476,11 +486,13 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
   (*ranks) = (map_rank *)malloc(sizeof(map_rank) * size);
 
   if (ny % size == 0) {
+    #pragma omp simd
     for (int i = 0; i < size; i++) {
       (*ranks)[i].start_col = i * work;
       (*ranks)[i].end_col = (i * work) + work;
     }
   } else {
+    #pragma omp simd
     for (int i = 0; i < size; i++) {
       (*ranks)[i].start_col = i * work;
       (*ranks)[i].end_col = (i * work) + work;
@@ -513,8 +525,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   int jj = params.ny - 2;
 
   #pragma ivdep
-  for (int ii = 0; ii < params.nx; ii++)
-  {
+  for (int ii = 0; ii < params.nx; ii++) {
     /* if the cell is not occupied and
     ** we don't send a negative density */
     if (!obstacles[ii + jj * params.nx] 
@@ -574,10 +585,8 @@ timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed*
   __assume((params.ny)%2==0);
 
   #pragma omp simd reduction(+:tot_cells, tot_u)
-  for (int jj = start_col; jj < end_col; jj++)
-  {
-    for (int ii = 0; ii < params.nx; ii++)
-    {
+  for (int jj = start_col; jj < end_col; jj++) {
+    for (int ii = 0; ii < params.nx; ii++) {
       __assume((obstacles[jj*params.nx + ii])<2);
       unsigned int y_n = (jj+1 == params.ny) ? 0 : (jj+1);
       unsigned int x_e = (ii+1 == params.nx) ? 0 : (ii+1);
@@ -906,6 +915,7 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
   float w1 = params->density / 9.f;
   float w2 = params->density / 36.f;
 
+  #pragma omp simd
   for (int jj = 0; jj < params->ny; jj++) {
     for (int ii = 0; ii < params->nx; ii++) {
        /* centre */
@@ -924,6 +934,7 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
   }
 
   /* first set all cells in obstacle array to zero */
+  #pragma omp simd
   for (int jj = 0; jj < params->ny; jj++) {
     for (int ii = 0; ii < params->nx; ii++) {
       (*obstacles_ptr)[ii + jj * params->nx] = 0;
@@ -1033,6 +1044,7 @@ int write_values(const t_param params, t_speed* restrict cells, int* restrict ob
     die("could not open file output file", __LINE__, __FILE__);
   }
 
+  #pragma omp simd
   for (int jj = 0; jj < params.ny; jj++) {
     for (int ii = 0; ii < params.nx; ii++) {
       /* an occupied cell */
@@ -1082,6 +1094,7 @@ int write_values(const t_param params, t_speed* restrict cells, int* restrict ob
     die("could not open file output file", __LINE__, __FILE__);
   }
 
+  #pragma omp simd
   for (int ii = 0; ii < params.maxIters; ii++)
   {
     fprintf(fp, "%d:\t%.12E\n", ii, av_vels[ii]);
