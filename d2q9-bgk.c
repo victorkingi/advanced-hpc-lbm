@@ -490,7 +490,6 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
     }
     // spread remaining work across all ranks
     while (allocated < ny) {
-      #pragma omp simd
       for (int i = 0; i < size; i++) {
         if (!(allocated < ny)) break;
         (*ranks)[i].end_col += 1;
