@@ -21,4 +21,6 @@ echo `echo $SLURM_JOB_NODELIST | uniq`
 # mpirun -ppn 28 ./d2q9-bgk input_128x128.params obstacles_128x128.dat
 # mpirun -ppn 28 ./d2q9-bgk input_128x256.params obstacles_128x256.dat
 # mpirun -ppn 28 ./d2q9-bgk input_256x256.params obstacles_256x256.dat
+srun --mpi=pmi2 ./d2q9-bgk input_128x128.params obstacles_128x128.dat
+srun --mpi=pmi2 ./d2q9-bgk input_256x256.params obstacles_256x256.dat
 srun --mpi=pmi2 ./d2q9-bgk input_1024x1024.params obstacles_1024x1024.dat
