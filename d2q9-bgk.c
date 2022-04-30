@@ -211,10 +211,7 @@ int main(int argc, char *argv[])
   end_col = ranks->end_col[rank];
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
-  int max_ncols = 0;
-  for (int i = 0; i < size; i++) {
-    if ((ranks->end_col[i] - ranks->start_col[i]) > max_ncols) max_ncols = ranks->end_col[i] - ranks->start_col[i];
-  }
+  int max_ncols = (ranks->end_col[rank] - ranks->start_col[rank]) + 1;
   collate_buf = (float*)malloc(sizeof(float) * max_ncols * local_nrows * 9);
 
   #ifdef DEBUG
