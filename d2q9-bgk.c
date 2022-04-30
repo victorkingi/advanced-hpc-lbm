@@ -477,7 +477,7 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
 
   if (ny % size == 0) {
     int i = 0;
-    #pragma omp simd aligned(i:1)
+    #pragma omp declare simd linear(i:1)
     for (i = 0; i < size; i++) {
       (*ranks)[i].start_col = i * work;
       (*ranks)[i].end_col = (i * work) + work;
