@@ -491,6 +491,7 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
         (*ranks)[i].end_col += 1;
         allocated += 1;
 
+        #pragma ivdep
         for (int k = i+1; k < size; k++) {
           (*ranks)[k].start_col = (*ranks)[k-1].end_col;
           (*ranks)[k].end_col += 1;
