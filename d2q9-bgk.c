@@ -89,8 +89,8 @@ typedef struct
 
 // start and end_col for each rank
 typedef struct {
-    int start_col;
-    int end_col;
+    unsigned int* start_col;
+    unsigned int* end_col;
 } map_rank;
 
 typedef struct {
@@ -104,7 +104,7 @@ typedef struct {
 */
 
 /* calculate start and end column for each rank. If params.ny % size != 0, it will spread remaining columns across all ranks  */
-void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks);
+void calc_all_rank_sizes(int size, int ny, map_rank* restrict ranks);
 
 /* load params, allocate memory, load obstacles & initialise fluid particle densities */
 int initialise(const char* restrict paramfile, const char* restrict obstaclefile,
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
   float *recvbuf;       /* buffer to hold received values */
   float *collate_buf;
   int ii;
-  map_rank *ranks = NULL;
+  map_rank ranks = NULL;
   timestep_return local_vals;
 
 
@@ -210,8 +210,8 @@ int main(int argc, char *argv[])
   calc_all_rank_sizes(size, params.ny, &ranks);
 
   int local_nrows = params.nx;
-  start_col = ranks[rank].start_col;
-  end_col = ranks[rank].end_col;
+  start_col = ranks.start_col[rank];
+  end_col = ranks.end_col[rank];
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
@@ -420,7 +420,7 @@ int main(int argc, char *argv[])
     // receive columns from other ranks, update local cells with this values
     #pragma omp simd
     for (int k = 1; k < size; k++) {
-      for (int col = ranks[k].start_col; col < ranks[k].end_col; col++) {
+      for (int col = ranks.start_col[k]; col < ranks.end_col[k]; col++) {
         // for each column, receive it to a buffer
         MPI_Recv(collate_buf, local_nrows * 9, MPI_FLOAT, k, tag, MPI_COMM_WORLD, &status);
 
@@ -477,38 +477,38 @@ int main(int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
-void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
+void calc_all_rank_sizes(int size, int ny, map_rank* restrict ranks)
 {
   unsigned int allocated = 0;
   unsigned int start = 0;
   unsigned int end = 0;
   unsigned int work = ny / size;
-  (*ranks) = (map_rank *)malloc(sizeof(map_rank) * size);
+  (*ranks) = (map_rank *)malloc(sizeof(map_rank) * 1);
 
   if (ny % size == 0) {
     #pragma omp simd
     for (int i = 0; i < size; i++) {
-      (*ranks)[i].start_col = i * work;
-      (*ranks)[i].end_col = (i * work) + work;
+      (*ranks).start_col[i] = i * work;
+      (*ranks).end_col[i] = (i * work) + work;
     }
   } else {
     #pragma omp simd reduction(+:allocated)
     for (int i = 0; i < size; i++) {
-      (*ranks)[i].start_col = i * work;
-      (*ranks)[i].end_col = (i * work) + work;
+      (*ranks).start_col[i] = i * work;
+      (*ranks).end_col[i] = (i * work) + work;
       allocated += work;
     }
     // spread remaining work across all ranks
     while (allocated < ny) {
       for (int i = 0; i < size; i++) {
         if (!(allocated < ny)) break;
-        (*ranks)[i].end_col += 1;
+        (*ranks).end_col[i] += 1;
         allocated += 1;
 
         // update new end columns for next ranks
         for (int k = i+1; k < size; k++) {
-          (*ranks)[k].start_col = (*ranks)[k-1].end_col;
-          (*ranks)[k].end_col += 1;
+          (*ranks).start_col[k] = (*ranks).end_col[k-1];
+          (*ranks).end_col[k] += 1;
         }
       }
     }
