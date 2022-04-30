@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --job-name d2q9-bgk-1-28
-#SBATCH --nodes 1
+#SBATCH --job-name d2q9-bgk-2-28
+#SBATCH --nodes 2
 #SBATCH --ntasks-per-node 28
 #SBATCH --time 00:15:00
 #SBATCH --partition veryshort
 #SBATCH --reservation=COSC026662
 #SBATCH --account=COSC026662
-#SBATCH --output d2q9-bgk-1-28.out
+#SBATCH --output d2q9-bgk-2-28.out
 
 export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
 
