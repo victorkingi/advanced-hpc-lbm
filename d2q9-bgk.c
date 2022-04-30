@@ -466,8 +466,6 @@ int main(int argc, char *argv[])
   free(sendbuf);
   free(recvbuf);
   free(collate_buf);
-  free(ranks->start_col);
-  free(ranks->end_col);
   free(ranks);
   sendbuf = NULL;
   recvbuf = NULL;
