@@ -227,6 +227,7 @@ int main(int argc, char *argv[])
 
   accelerate_flow(params, cells, obstacles);
 
+  #pragma omp simd
   for (int tt = 0; tt < params.maxIters; tt++)
   {
     local_vals = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
