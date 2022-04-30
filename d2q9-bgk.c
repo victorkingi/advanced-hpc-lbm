@@ -235,16 +235,6 @@ int main(int argc, char *argv[])
     t_speed* temp = cells;
     cells = tmp_cells;
     tmp_cells = temp;
-    
-    /*
-    ** halo exchange for the local grids:
-    ** - first send to the left and receive from the right,
-    ** - then send to the right and receive from the left.
-    ** for each direction:
-    ** - first, pack the send buffer using values from the grid
-    ** - exchange using MPI_Sendrecv()
-    ** - unpack values from the recieve buffer into the grid
-    */
    
     if (size != 1) {
       // send to the left, receive from right 
@@ -473,6 +463,14 @@ int main(int argc, char *argv[])
   MPI_Finalize();
 
   finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
+  free(sendbuf);
+  free(recvbuf);
+  free(collate_buf);
+  free(ranks);
+  sendbuf = NULL;
+  recvbuf = NULL;
+  collate_buf = NULL;
+  ranks = NULL;
 
   return EXIT_SUCCESS;
 }
