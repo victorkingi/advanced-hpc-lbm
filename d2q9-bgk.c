@@ -485,12 +485,6 @@ int main(int argc, char *argv[])
     }
   }
 
-  if (rank != 0) {
-    finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
-    free(sendbuf);
-    sendbuf = NULL;
-  }
-
   MPI_Finalize();
 
   return EXIT_SUCCESS;
