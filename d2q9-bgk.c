@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
   for (int i = 0; i < size; i++) {
     if ((ranks[i].end_col - ranks[i].start_col) > max_ncols) max_ncols = ranks[i].end_col - ranks[i].start_col;
   }
-  printf("%d", max_ncols * local_nrows * 9);
+  printf("%d", local_nrows);
   collate_buf = (float*)malloc(sizeof(float) * max_ncols * local_nrows * 9);
 
   #ifdef DEBUG
