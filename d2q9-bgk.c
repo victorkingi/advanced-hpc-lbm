@@ -491,7 +491,6 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
         (*ranks)[i].end_col += 1;
         allocated += 1;
 
-        #pragma ivdep
         for (int k = i+1; k < size; k++) {
           (*ranks)[k].start_col = (*ranks)[k-1].end_col;
           (*ranks)[k].end_col += 1;
@@ -510,7 +509,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   /* modify the 2nd row of the grid */
   int jj = params.ny - 2;
 
-  #pragma ivdep
+  #pragma omp simd aligned(cells->speed_1[:jj*params.nx])
   for (int ii = 0; ii < params.nx; ii++)
   {
     /* if the cell is not occupied and
