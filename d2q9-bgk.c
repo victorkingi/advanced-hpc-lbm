@@ -210,8 +210,8 @@ int main(int argc, char *argv[])
   calc_all_rank_sizes(size, params.ny, &ranks);
 
   int local_nrows = params.nx;
-  start_col = ranks.start_col[rank];
-  end_col = ranks.end_col[rank];
+  start_col = ranks->start_col[rank];
+  end_col = ranks->end_col[rank];
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
@@ -420,7 +420,7 @@ int main(int argc, char *argv[])
     // receive columns from other ranks, update local cells with this values
     #pragma omp simd
     for (int k = 1; k < size; k++) {
-      for (int col = ranks.start_col[k]; col < ranks.end_col[k]; col++) {
+      for (int col = ranks->start_col[k]; col < ranks->end_col[k]; col++) {
         // for each column, receive it to a buffer
         MPI_Recv(collate_buf, local_nrows * 9, MPI_FLOAT, k, tag, MPI_COMM_WORLD, &status);
 
@@ -497,14 +497,14 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
     #pragma omp simd reduction(+:allocated)
     for (int i = 0; i < size; i++) {
       (*ranks)->start_col[i] = i * work;
-      (*ranks).end_col[i] = (i * work) + work;
+      (*ranks)->end_col[i] = (i * work) + work;
       allocated += work;
     }
     // spread remaining work across all ranks
     while (allocated < ny) {
       for (int i = 0; i < size; i++) {
         if (!(allocated < ny)) break;
-        (*ranks).end_col[i] += 1;
+        (*ranks)->end_col[i] += 1;
         allocated += 1;
 
         // update new end columns for next ranks
