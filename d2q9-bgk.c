@@ -136,21 +136,6 @@ float calc_reynolds(const t_param params, t_speed* restrict cells, int* restrict
 void die(const char* restrict message, const int line, const char* restrict file);
 void usage(const char* restrict exe);
 
-/* global variable */
-unsigned int is_power_of_2;
-
-unsigned int check_power_of_2(unsigned int x) {
-  unsigned int pow = 0;
-  unsigned int result = x;
-  while (result != 1)
-  {
-    result = result >> 1;
-    if ((result+1) & 1) return 0; 
-    pow++;
-  }
-  return 1;
-}
-
 /*
 ** main program:
 ** initialise, timestep loop, finalise
@@ -217,7 +202,6 @@ int main(int argc, char *argv[])
 
   initialise(paramfile, obstaclefile, &params, &cells, &tmp_cells, &obstacles, &av_vels);
 
-  is_power_of_2 = check_power_of_2(params.nx);
   float local_tot_cells[params.maxIters];
   float local_tot_u[params.maxIters];
   float global_tot_cells[params.maxIters];
