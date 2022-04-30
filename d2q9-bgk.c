@@ -509,7 +509,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   /* modify the 2nd row of the grid */
   int jj = params.ny - 2;
 
-  #pragma omp simd aligned(cells->speed_1[:jj*params.nx])
+  #pragma ivdep
   for (int ii = 0; ii < params.nx; ii++)
   {
     /* if the cell is not occupied and
