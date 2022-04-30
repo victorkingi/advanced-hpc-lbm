@@ -906,10 +906,8 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
   float w1 = params->density / 9.f;
   float w2 = params->density / 36.f;
 
-  for (int jj = 0; jj < params->ny; jj++)
-  {
-    for (int ii = 0; ii < params->nx; ii++)
-    {
+  for (int jj = 0; jj < params->ny; jj++) {
+    for (int ii = 0; ii < params->nx; ii++) {
        /* centre */
       (*cells_ptr)->speed_0[ii + jj * params->nx] = w0;
       /* axis directions */
@@ -926,10 +924,8 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
   }
 
   /* first set all cells in obstacle array to zero */
-  for (int jj = 0; jj < params->ny; jj++)
-  {
-    for (int ii = 0; ii < params->nx; ii++)
-    {
+  for (int jj = 0; jj < params->ny; jj++) {
+    for (int ii = 0; ii < params->nx; ii++) {
       (*obstacles_ptr)[ii + jj * params->nx] = 0;
     }
   }
@@ -1007,10 +1003,9 @@ float total_density(const t_param params, t_speed* restrict cells)
 {
   float total = 0.f; /* accumulator */
 
-  for (int jj = 0; jj < params.ny; jj++)
-  {
-    for (int ii = 0; ii < params.nx; ii++)
-    {
+  #pragma omp simd reduction(+:total)
+  for (int jj = 0; jj < params.ny; jj++) {
+    for (int ii = 0; ii < params.nx; ii++) {
       total += cells->speed_0[ii + jj * params.nx] 
       + cells->speed_1[ii + jj * params.nx] + cells->speed_2[ii + jj * params.nx] 
       + cells->speed_3[ii + jj * params.nx] + cells->speed_4[ii + jj * params.nx] 
@@ -1038,10 +1033,9 @@ int write_values(const t_param params, t_speed* restrict cells, int* restrict ob
     die("could not open file output file", __LINE__, __FILE__);
   }
 
-  for (int jj = 0; jj < params.ny; jj++)
-  {
-    for (int ii = 0; ii < params.nx; ii++)
-    {
+  #pragma omp simd
+  for (int jj = 0; jj < params.ny; jj++) {
+    for (int ii = 0; ii < params.nx; ii++) {
       /* an occupied cell */
       if (obstacles[ii + jj * params.nx])
       {
