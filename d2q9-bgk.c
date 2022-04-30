@@ -153,10 +153,10 @@ int main(int argc, char *argv[])
   float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
-  unsigned int rank;                                                                 /* the rank of this process */
+  int rank;                                                                          /* the rank of this process */
   int left;                                                                          /* the rank of the process to the left */
   int right;                                                                         /* the rank of the process to the right */
-  unsigned int size;                                                                 /* number of processes in the communicator */
+  int size;                                                                          /* number of processes in the communicator */
   int tag = 0;                                                                       /* scope for adding extra information to a message */
   MPI_Status status;                                                                 /* struct used by MPI_Recv */
   int start_col,end_col;                                                             /* rank dependent looping indices */
