@@ -410,6 +410,7 @@ int main(int argc, char *argv[])
     }
 
     // receive columns from other ranks, update local cells with this values
+    #pragma omp simd
     for (int k = 1; k < size; k++) {
       for (int col = ranks[k].start_col; col < ranks[k].end_col; col++) {
         // for each column, receive it to a buffer
