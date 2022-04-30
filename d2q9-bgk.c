@@ -489,7 +489,7 @@ void calc_all_rank_sizes(int size, int ny, map_rank **ranks)
   int start = 0;
   int end = 0;
   int work = ny / size;
-  (*ranks) = (map_rank *)malloc(sizeof(map_rank));
+  (*ranks) = (map_rank *)malloc(sizeof(map_rank) * size);
 
   if (ny % size == 0) {
     for (int i = 0; i < size; i++) {
