@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
   end_col = ranks->end_col[rank];
   sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
-  collate_buf = (float*)malloc(sizeof(float) * local_nrows * (end_col - start_col) * 9);
+  collate_buf = (float*)malloc(sizeof(float) * local_nrows * ((end_col - start_col) + 10) * 9);
 
   #ifdef DEBUG
     printf("start %d, end %d; right %d, left %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
