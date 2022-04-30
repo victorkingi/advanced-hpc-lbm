@@ -1,5 +1,6 @@
-export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
 #!/bin/bash
+
+export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
 
 #SBATCH --job-name d2q9-bgk
 #SBATCH --nodes 1
