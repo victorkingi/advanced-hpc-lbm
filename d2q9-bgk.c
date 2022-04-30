@@ -479,14 +479,6 @@ int main(int argc, char *argv[])
   MPI_Finalize();
 
   finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
-  free(sendbuf);
-  free(recvbuf);
-  free(collate_buf);
-  free(ranks);
-  sendbuf = NULL;
-  recvbuf = NULL;
-  collate_buf = NULL;
-  ranks = NULL;
 
   return EXIT_SUCCESS;
 }
