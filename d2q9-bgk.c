@@ -486,12 +486,14 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
       (*ranks)[i].end_col = (i * work) + work;
       allocated += work;
     }
+    // spread remaining work across all ranks
     while (allocated < ny) {
       for (int i = 0; i < size; i++) {
         if (!(allocated < ny)) break;
         (*ranks)[i].end_col += 1;
         allocated += 1;
 
+        // update new end columns for next ranks
         for (int k = i+1; k < size; k++) {
           (*ranks)[k].start_col = (*ranks)[k-1].end_col;
           (*ranks)[k].end_col += 1;
@@ -730,10 +732,9 @@ float av_velocity(const t_param params, t_speed* restrict cells, int* restrict o
   tot_u = 0.f;
 
   /* loop over all non-blocked cells */
-  for (unsigned int jj = 0; jj < params.ny; jj++)
-  {
-    for (unsigned int ii = 0; ii < params.nx; ii++)
-    {
+  #pragma omp simd reduction(+:tot_cells, tot_u)
+  for (int jj = 0; jj < params.ny; jj++) {
+    for (int ii = 0; ii < params.nx; ii++) {
       /* ignore occupied cells */
       if (!obstacles[ii + jj * params.nx])
       {
