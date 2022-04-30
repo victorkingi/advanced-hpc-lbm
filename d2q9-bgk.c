@@ -104,7 +104,7 @@ typedef struct {
 */
 
 /* calculate start and end column for each rank. If params.ny % size != 0, it will spread remaining columns across all ranks  */
-void calc_all_rank_sizes(int size, int ny, map_rank* restrict ranks);
+void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks);
 
 /* load params, allocate memory, load obstacles & initialise fluid particle densities */
 int initialise(const char* restrict paramfile, const char* restrict obstaclefile,
