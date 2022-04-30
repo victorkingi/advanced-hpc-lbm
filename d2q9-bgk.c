@@ -87,7 +87,7 @@ typedef struct
 
 } t_speed;
 
-// start and end_col for each rank
+/* start and end_col for each rank */
 typedef struct {
     unsigned int* start_col;
     unsigned int* end_col;
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
   /* parse the command line */
   if (argc != 3) {
     usage(argv[0]);
-    
+
   } else {
     paramfile = argv[1];
     obstaclefile = argv[2];
