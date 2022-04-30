@@ -165,8 +165,7 @@ int main(int argc, char *argv[])
   enum bool {FALSE,TRUE};                                                            /* enumerated type: false = 0, true = 1 */  
   char hostname[MPI_MAX_PROCESSOR_NAME];                                             /* character array to hold hostname running process */
   float *sendbuf;                                                                    /* buffer to hold values to send */
-  float *recvbuf;                                                                    /* buffer to hold received values */
-  float *collate_buf;                                                                /* buffer to hold values to collate */
+  float *recvbuf;                                                                    /* buffer to hold received values */                                                                /* buffer to hold values to collate */
   int ii;                                                    
 
 
@@ -209,10 +208,10 @@ int main(int argc, char *argv[])
   int local_nrows = params.nx;
   start_col = ranks->start_col[rank];
   end_col = ranks->end_col[rank];
-  sendbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
-  recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
+  float sendbuf[local_nrows * 9];
+  float recvbuf[local_nrows * 9];
   int max_ncols = (ranks->end_col[rank] - ranks->start_col[rank]) + 1;
-  collate_buf = (float*)malloc(sizeof(float) * max_ncols * local_nrows * 9);
+  float collate_buf[max_ncols * local_nrows * 9];
 
   #ifdef DEBUG
     printf("start %d, end %d; right %d, left %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
@@ -467,9 +466,6 @@ int main(int argc, char *argv[])
   MPI_Finalize();
 
   finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
-  free(sendbuf);
-  free(recvbuf);
-  free(collate_buf);
   free(ranks->start_col);
   free(ranks->end_col);
   free(ranks);
