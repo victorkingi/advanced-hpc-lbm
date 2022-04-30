@@ -411,11 +411,11 @@ int main(int argc, char *argv[])
 
     // receive columns from other ranks, update local cells with this values
     for (int k = 1; k < size; k++) {
-      int remote_ncols = ranks[k].end_col - ranks[k].start_col;
       for (int col = ranks[k].start_col; col < ranks[k].end_col; col++) {
         // for each column, receive it to a buffer
         MPI_Recv(collate_buf, local_nrows * 9, MPI_FLOAT, k, tag, MPI_COMM_WORLD, &status);
 
+        #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           cells->speed_0[ii + col * params.nx] = collate_buf[0 + (ii*9)];
           cells->speed_1[ii + col * params.nx] = collate_buf[1 + (ii*9)];
