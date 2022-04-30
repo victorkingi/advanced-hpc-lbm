@@ -227,7 +227,6 @@ int main(int argc, char *argv[])
 
   accelerate_flow(params, cells, obstacles);
 
-  #pragma omp simd
   for (int tt = 0; tt < params.maxIters; tt++) {
     local_vals = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
     local_tot_cells[tt] = local_vals.tot_cells;
@@ -453,8 +452,8 @@ int main(int argc, char *argv[])
     write_values(params, cells, obstacles, av_vels);
 
   } else {
-    #pragma omp simd
     for (int col = start_col; col < end_col; col++) {
+      #pragma omp simd
       for (ii=0; ii < local_nrows; ii++) {
         collate_buf[0 + (ii*9)] = cells->speed_0[ii + col * params.nx];
         collate_buf[1 + (ii*9)] = cells->speed_1[ii + col * params.nx];
