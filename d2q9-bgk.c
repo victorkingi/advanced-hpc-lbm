@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
 
       } 
       else {
-        // sending one column which is all rows in it having all 9 speeds
+        // sending one column which has all rows in it having all 9 speeds
         #pragma omp simd
         for(ii=0; ii < local_nrows; ii++) {
           sendbuf[0 + (ii*9)] = cells->speed_0[ii + start_col * params.nx];
@@ -466,6 +466,8 @@ int main(int argc, char *argv[])
   free(sendbuf);
   free(recvbuf);
   free(collate_buf);
+  free(ranks->start_col);
+  free(ranks->end_col);
   free(ranks);
   sendbuf = NULL;
   recvbuf = NULL;
