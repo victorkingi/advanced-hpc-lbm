@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
   float *recvbuf;       /* buffer to hold received values */
   float *collate_buf;
   int ii;
-  map_rank ranks = NULL;
+  map_rank *ranks = NULL;
   timestep_return local_vals;
 
 
@@ -477,13 +477,15 @@ int main(int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
-void calc_all_rank_sizes(int size, int ny, map_rank* restrict ranks)
+void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
 {
   unsigned int allocated = 0;
   unsigned int start = 0;
   unsigned int end = 0;
   unsigned int work = ny / size;
-  ranks = malloc(sizeof(map_rank) * 1);
+  *ranks = (map_rank *)malloc(sizeof(map_rank) * 1);
+  (*ranks)->start_col = (unsigned int *)malloc(sizeof(unsigned int) * size);
+  (*ranks)->end_col = (unsigned int *)malloc(sizeof(unsigned int) * size);
 
   if (ny % size == 0) {
     #pragma omp simd
