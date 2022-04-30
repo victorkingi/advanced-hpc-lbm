@@ -732,10 +732,9 @@ float av_velocity(const t_param params, t_speed* restrict cells, int* restrict o
   tot_u = 0.f;
 
   /* loop over all non-blocked cells */
-  for (int jj = 0; jj < params.ny; jj++)
-  {
-    for (int ii = 0; ii < params.nx; ii++)
-    {
+  #pragma omp simd
+  for (int jj = 0; jj < params.ny; jj++) {
+    for (int ii = 0; ii < params.nx; ii++) {
       /* ignore occupied cells */
       if (!obstacles[ii + jj * params.nx])
       {
