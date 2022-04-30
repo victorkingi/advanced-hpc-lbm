@@ -147,37 +147,34 @@ int main(int argc, char *argv[])
   t_param params;                                                                    /* struct to hold parameter values */
   t_speed* cells = NULL;                                                             /* grid containing fluid densities */
   t_speed* tmp_cells = NULL;                                                         /* scratch space */
+  map_rank *ranks = NULL;                                                            /* all ranks with their start and end columns */
+  timestep_return local_vals;                                                        /* struct holding tot_u and tot_cells for each timestep */
   int* obstacles = NULL;                                                             /* grid indicating which cells are blocked */
   float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
-
-  int rank;              /* the rank of this process */
-  int left;              /* the rank of the process to the left */
-  int right;             /* the rank of the process to the right */
-  int size;              /* number of processes in the communicator */
-  int tag = 0;           /* scope for adding extra information to a message */
-  MPI_Status status;     /* struct used by MPI_Recv */
-  int start_col,end_col; /* rank dependent looping indices */
-  int flag;               /* for checking whether MPI_Init() has been called */
-  int strlen_;             /* length of a character array */
-  enum bool {FALSE,TRUE}; /* enumerated type: false = 0, true = 1 */  
-  char hostname[MPI_MAX_PROCESSOR_NAME];  /* character array to hold hostname running process */
-  float *sendbuf;       /* buffer to hold values to send */
-  float *recvbuf;       /* buffer to hold received values */
-  float *collate_buf;
-  int ii;
-  map_rank *ranks = NULL;
-  timestep_return local_vals;
+  unsigned int rank;                                                                 /* the rank of this process */
+  int left;                                                                          /* the rank of the process to the left */
+  int right;                                                                         /* the rank of the process to the right */
+  unsigned int size;                                                                 /* number of processes in the communicator */
+  int tag = 0;                                                                       /* scope for adding extra information to a message */
+  MPI_Status status;                                                                 /* struct used by MPI_Recv */
+  int start_col,end_col;                                                             /* rank dependent looping indices */
+  int flag;                                                                          /* for checking whether MPI_Init() has been called */
+  int strlen_;                                                                       /* length of a character array */
+  enum bool {FALSE,TRUE};                                                            /* enumerated type: false = 0, true = 1 */  
+  char hostname[MPI_MAX_PROCESSOR_NAME];                                             /* character array to hold hostname running process */
+  float *sendbuf;                                                                    /* buffer to hold values to send */
+  float *recvbuf;                                                                    /* buffer to hold received values */
+  float *collate_buf;                                                                /* buffer to hold values to collate */
+  int ii;                                                    
 
 
   /* parse the command line */
-  if (argc != 3)
-  {
+  if (argc != 3) {
     usage(argv[0]);
-  }
-  else
-  {
+    
+  } else {
     paramfile = argv[1];
     obstaclefile = argv[2];
   }
