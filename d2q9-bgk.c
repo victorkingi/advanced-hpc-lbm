@@ -213,8 +213,7 @@ int main(int argc, char *argv[])
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   int max_ncols = 0;
   for (int i = 0; i < size; i++) {
-    printf("%d\n", (ranks[i].end_col - ranks[i].start_col));
-    if ((ranks[i].end_col - ranks[i].start_col) > max_ncols) max_ncols = ranks[i].end_col - ranks[i].start_col;
+    if ((ranks.end_col[i] - ranks.start_col[i]) > max_ncols) max_ncols = ranks[i].end_col - ranks[i].start_col;
   }
   collate_buf = (float*)malloc(sizeof(float) * max_ncols * local_nrows * 9);
 
