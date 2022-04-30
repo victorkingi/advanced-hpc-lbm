@@ -108,7 +108,7 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks);
 
 /* load params, allocate memory, load obstacles & initialise fluid particle densities */
 int initialise(const char* restrict paramfile, const char* restrict obstaclefile,
-               t_param* restrict params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
+               t_param* restrict params, t_speed* restrict cells_ptr, t_speed* restrict tmp_cells_ptr,
                int** restrict obstacles_ptr, float** restrict av_vels_ptr);
 
 /*
@@ -121,7 +121,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
 int write_values(const t_param params, t_speed* restrict cells, int* restrict obstacles, float* restrict av_vels);
 
 /* finalise, including freeing up allocated memory */
-int finalise(const t_param* restrict params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
+int finalise(const t_param* restrict params, t_speed* restrict cells_ptr, t_speed* restrict tmp_cells_ptr,
              int** restrict obstacles_ptr, float** restrict av_vels_ptr);
 
 /* Sum all the densities in the grid.
@@ -841,7 +841,7 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
   */
 
   /* main grid */
-  *cells_ptr = (t_speed)malloc(sizeof(t_speed) * 1);
+  *cells_ptr = malloc(sizeof(t_speed) * 1);
   (*cells_ptr)->speed_0 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*cells_ptr)->speed_1 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*cells_ptr)->speed_2 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
@@ -867,7 +867,7 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
     die("cannot allocate memory for a speed in cells", __LINE__, __FILE__);
 
   /* 'helper' grid, used as scratch space */
-  *tmp_cells_ptr = (t_speed)malloc(sizeof(t_speed) * 1);
+  *tmp_cells_ptr = malloc(sizeof(t_speed) * 1);
   (*tmp_cells_ptr)->speed_0 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*tmp_cells_ptr)->speed_1 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*tmp_cells_ptr)->speed_2 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
