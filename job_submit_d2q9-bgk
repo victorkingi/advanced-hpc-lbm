@@ -1,3 +1,4 @@
+export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
 #!/bin/bash
 
 #SBATCH --job-name d2q9-bgk
@@ -8,8 +9,6 @@
 #SBATCH --reservation=COSC026662
 #SBATCH --account=COSC026662
 #SBATCH --output d2q9-bgk.out
-
-# export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi.so
 
 echo Running on host `hostname`
 echo Time is `date`
