@@ -404,7 +404,7 @@ int main(int argc, char *argv[])
               MPI_SUM, 0, MPI_COMM_WORLD);
 
   if (rank == 0) {
-    #pragma simd aligned(av_vels:1)
+    #pragma omp simd aligned(av_vels:1)
     for (int tt = 0; tt < params.maxIters; tt++) {
       av_vels[tt] = global_tot_u[tt] / global_tot_cells[tt];
     }
@@ -573,7 +573,7 @@ timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed*
   __assume((params.nx)%2==0);
   __assume((params.ny)%2==0);
 
-  #pragma simd collapse(2) reduction(+:tot_cells, tot_u)
+  #pragma omp simd collapse(2) reduction(+:tot_cells, tot_u)
   for (int jj = start_col; jj < end_col; jj++)
   {
     for (int ii = 0; ii < params.nx; ii++)
@@ -732,7 +732,7 @@ float av_velocity(const t_param params, t_speed* restrict cells, int* restrict o
   tot_u = 0.f;
 
   /* loop over all non-blocked cells */
-  #pragma simd
+  #pragma omp simd
   for (int jj = 0; jj < params.ny; jj++) {
     for (int ii = 0; ii < params.nx; ii++) {
       /* ignore occupied cells */
@@ -906,7 +906,7 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
   float w1 = params->density / 9.f;
   float w2 = params->density / 36.f;
 
-  #pragma simd
+  #pragma omp simd collapse(2)
   for (int jj = 0; jj < params->ny; jj++) {
     for (int ii = 0; ii < params->nx; ii++) {
        /* centre */
@@ -925,7 +925,7 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
   }
 
   /* first set all cells in obstacle array to zero */
-  #pragma simd
+  #pragma omp simd collapse(2)
   for (int jj = 0; jj < params->ny; jj++) {
     for (int ii = 0; ii < params->nx; ii++) {
       (*obstacles_ptr)[ii + jj * params->nx] = 0;
@@ -1005,7 +1005,7 @@ float total_density(const t_param params, t_speed* restrict cells)
 {
   float total = 0.f; /* accumulator */
 
-  #pragma simd collapse(2)
+  #pragma omp simd collapse(2)
   for (int jj = 0; jj < params.ny; jj++) {
     for (int ii = 0; ii < params.nx; ii++) {
       total += cells->speed_0[ii + jj * params.nx] 
@@ -1035,7 +1035,7 @@ int write_values(const t_param params, t_speed* restrict cells, int* restrict ob
     die("could not open file output file", __LINE__, __FILE__);
   }
 
-  #pragma simd collapse(2)
+  #pragma omp simd collapse(2)
   for (int jj = 0; jj < params.ny; jj++) {
     for (int ii = 0; ii < params.nx; ii++) {
       /* an occupied cell */
