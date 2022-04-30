@@ -512,9 +512,8 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   /* modify the 2nd row of the grid */
   int jj = params.ny - 2;
 
-  #pragma ivdep
-  for (int ii = 0; ii < params.nx; ii++)
-  {
+  #pragma omp simd ivdep
+  for (int ii = 0; ii < params.nx; ii++) {
     /* if the cell is not occupied and
     ** we don't send a negative density */
     if (!obstacles[ii + jj * params.nx] 
@@ -574,10 +573,8 @@ timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed*
   __assume((params.ny)%2==0);
 
   #pragma omp simd collapse(2) reduction(+:tot_cells, tot_u)
-  for (int jj = start_col; jj < end_col; jj++)
-  {
-    for (int ii = 0; ii < params.nx; ii++)
-    {
+  for (int jj = start_col; jj < end_col; jj++) {
+    for (int ii = 0; ii < params.nx; ii++) {
       __assume((obstacles[jj*params.nx + ii])<2);
       unsigned int y_n = (jj+1 == params.ny) ? 0 : (jj+1);
       unsigned int x_e = (ii+1 == params.nx) ? 0 : (ii+1);
@@ -732,7 +729,7 @@ float av_velocity(const t_param params, t_speed* restrict cells, int* restrict o
   tot_u = 0.f;
 
   /* loop over all non-blocked cells */
-  #pragma omp simd
+  #pragma omp simd collapse(2)
   for (int jj = 0; jj < params.ny; jj++) {
     for (int ii = 0; ii < params.nx; ii++) {
       /* ignore occupied cells */
