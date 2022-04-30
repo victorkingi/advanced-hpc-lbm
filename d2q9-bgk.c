@@ -227,7 +227,6 @@ int main(int argc, char *argv[])
 
   accelerate_flow(params, cells, obstacles);
 
-  #pragma ivdep
   for (int tt = 0; tt < params.maxIters; tt++)
   {
     local_vals = timestep(params, cells, tmp_cells, obstacles, start_col, end_col);
@@ -510,6 +509,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   /* modify the 2nd row of the grid */
   int jj = params.ny - 2;
 
+  #pragma ivdep
   for (int ii = 0; ii < params.nx; ii++)
   {
     /* if the cell is not occupied and
