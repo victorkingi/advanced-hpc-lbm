@@ -3,7 +3,7 @@
 EXE=d2q9-bgk
 
 CC=mpiicc
-CFLAGS= -O3 -xCORE-AVX2 -qopenmp
+CFLAGS= -std=c99 -Wall -Ofast -ffinite-math-only  -xCORE-AVX2 -qopenmp -fargument-noalias
 LIBS= -lm
 
 FINAL_STATE_FILE=./final_state.dat

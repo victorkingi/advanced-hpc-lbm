@@ -57,7 +57,6 @@
 #include <sys/resource.h>
 #include "mpi.h"
 
-#define NSPEEDS 9
 #define FINALSTATEFILE "final_state.dat"
 #define AVVELSFILE "av_vels.dat"
 
@@ -88,31 +87,29 @@ typedef struct
 
 } t_speed;
 
+// start and end_col for each rank
 typedef struct {
     int start_col;
     int end_col;
 } map_rank;
 
-//struct containing all tot_u and tot_cells values across all timesteps
 typedef struct {
     float tot_u;
     float tot_cells;
 } timestep_return;
 
 
-
 /*
 ** function prototypes
 */
 
-int calc_ncols_from_rank(const t_param params, int rank, int size);
-
-void calc_all_rank_sizes(int size, int ny, map_rank **ranks);
+/* calculate start and end column for each rank. If params.ny % size != 0, it will spread remaining columns across all ranks  */
+void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks);
 
 /* load params, allocate memory, load obstacles & initialise fluid particle densities */
-int initialise(const char *paramfile, const char *obstaclefile,
-               t_param *params, t_speed **cells_ptr, t_speed **tmp_cells_ptr,
-               int **obstacles_ptr, float **av_vels_ptr);
+int initialise(const char* restrict paramfile, const char* restrict obstaclefile,
+               t_param* restrict params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
+               int** restrict obstacles_ptr, float** restrict av_vels_ptr);
 
 /*
 ** The main calculation methods.
@@ -124,7 +121,7 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
 int write_values(const t_param params, t_speed* restrict cells, int* restrict obstacles, float* restrict av_vels);
 
 /* finalise, including freeing up allocated memory */
-int finalise(const t_param *params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
+int finalise(const t_param* restrict params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
              int** restrict obstacles_ptr, float** restrict av_vels_ptr);
 
 /* Sum all the densities in the grid.
@@ -136,8 +133,8 @@ float total_density(const t_param params, t_speed* restrict cells);
 float calc_reynolds(const t_param params, t_speed* restrict cells, int* restrict obstacles);
 
 /* utility functions */
-void die(const char *message, const int line, const char *file);
-void usage(const char *exe);
+void die(const char* restrict message, const int line, const char* restrict file);
+void usage(const char* restrict exe);
 
 /* global variable */
 unsigned int is_power_of_2;
@@ -235,8 +232,10 @@ int main(int argc, char *argv[])
   recvbuf = (float*)malloc(sizeof(float) * local_nrows * 9);
   collate_buf = (float*)malloc(sizeof(float) * local_nrows * 9);
 
-  printf("start %d, end %d; right %d, left %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
-
+  #ifdef DEBUG
+    printf("start %d, end %d; right %d, left %d from host %s: process %d of %d\n", start_col, end_col, right, left, hostname, rank, size);
+  #endif
+  
   /* Init time stops here, compute time starts*/
   gettimeofday(&timstr, NULL);
   init_toc = timstr.tv_sec + (timstr.tv_usec / 1000000.0);
@@ -483,7 +482,7 @@ int main(int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
-void calc_all_rank_sizes(int size, int ny, map_rank **ranks)
+void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
 {
   int allocated = 0;
   int start = 0;
@@ -517,19 +516,6 @@ void calc_all_rank_sizes(int size, int ny, map_rank **ranks)
   }
 }
 
-int calc_ncols_from_rank(const t_param params, int rank, int size)
-{
-  int ncols;
-
-  ncols = params.ny / size;       /* integer division */
-  if ((params.ny % size) != 0) {  /* if there is a remainder */
-    if (rank == size - 1)
-      ncols += params.ny % size;  /* add remainder to last rank */
-  }
-  
-  return ncols;
-}
-
 int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict obstacles)
 {
   /* compute weighting factors */
@@ -539,7 +525,6 @@ int accelerate_flow(const t_param params, t_speed* restrict cells, int* restrict
   /* modify the 2nd row of the grid */
   int jj = params.ny - 2;
 
-  //#pragma omp parallel for
   for (int ii = 0; ii < params.nx; ii++)
   {
     /* if the cell is not occupied and
@@ -610,9 +595,9 @@ timestep_return timestep(const t_param params, t_speed* restrict cells, t_speed*
       unsigned int x_e = (ii+1 == params.nx) ? 0 : (ii+1);
       unsigned int y_s = (jj == 0) ? (params.ny - 1) : (jj - 1);
       unsigned int x_w = (ii == 0) ? (params.nx - 1) : (ii - 1);
-      __assume(y_n < params.ny);
+      __assume(y_n < end_col);
       __assume(x_e < params.nx);
-      __assume(y_s < params.ny - 1);
+      __assume(y_s < end_col - 1);
       __assume(x_w < params.nx - 1);
 
       register float speed_0 = cells->speed_0[ii + jj*params.nx];   /* central cell, no movement */
@@ -794,9 +779,9 @@ float av_velocity(const t_param params, t_speed* restrict cells, int* restrict o
 }
 
 
-int initialise(const char *paramfile, const char *obstaclefile,
-               t_param *params, t_speed **cells_ptr, t_speed **tmp_cells_ptr,
-               int **obstacles_ptr, float **av_vels_ptr)
+int initialise(const char* restrict paramfile, const char* restrict obstaclefile,
+               t_param* restrict params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
+               int** restrict obstacles_ptr, float** restrict av_vels_ptr)
 {
   char message[1024]; /* message buffer */
   FILE *fp;           /* file pointer */
@@ -934,7 +919,6 @@ int initialise(const char *paramfile, const char *obstaclefile,
   float w1 = params->density / 9.f;
   float w2 = params->density / 36.f;
 
-  #pragma omp parallel for collapse(2)
   for (int jj = 0; jj < params->ny; jj++)
   {
     for (int ii = 0; ii < params->nx; ii++)
@@ -1004,8 +988,8 @@ int initialise(const char *paramfile, const char *obstaclefile,
   return EXIT_SUCCESS;
 }
 
-int finalise(const t_param *params, t_speed **cells_ptr, t_speed **tmp_cells_ptr,
-             int **obstacles_ptr, float **av_vels_ptr)
+int finalise(const t_param* restrict params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
+             int** restrict obstacles_ptr, float** restrict av_vels_ptr)
 {
   /*
   ** free up allocated memory
@@ -1128,7 +1112,7 @@ int write_values(const t_param params, t_speed* restrict cells, int* restrict ob
   return EXIT_SUCCESS;
 }
 
-void die(const char *message, const int line, const char *file)
+void die(const char* restrict message, const int line, const char* restrict file)
 {
   fprintf(stderr, "Error at line %d of file %s:\n", line, file);
   fprintf(stderr, "%s\n", message);
@@ -1136,7 +1120,7 @@ void die(const char *message, const int line, const char *file)
   exit(EXIT_FAILURE);
 }
 
-void usage(const char *exe)
+void usage(const char* restrict exe)
 {
   fprintf(stderr, "Usage: %s <paramfile> <obstaclefile>\n", exe);
   exit(EXIT_FAILURE);
