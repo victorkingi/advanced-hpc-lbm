@@ -145,13 +145,12 @@ int main(int argc, char *argv[])
   char *paramfile = NULL;                                                            /* name of the input parameter file */
   char *obstaclefile = NULL;                                                         /* name of a the input obstacle file */
   t_param params;                                                                    /* struct to hold parameter values */
-  t_speed* cells = NULL;                                                             /* grid containing fluid densities */
-  t_speed* tmp_cells = NULL;                                                         /* scratch space */
+  t_speed cells = NULL;                                                             /* grid containing fluid densities */
+  t_speed tmp_cells = NULL;                                                         /* scratch space */
   int* obstacles = NULL;                                                             /* grid indicating which cells are blocked */
   float *av_vels = NULL;                                                             /* a record of the av. velocity computed for each timestep */
   struct timeval timstr;                                                             /* structure to hold elapsed time */
   double tot_tic, tot_toc, init_tic, init_toc, comp_tic, comp_toc, col_tic, col_toc; /* floating point numbers to calculate elapsed wallclock time */
-
   int rank;              /* the rank of this process */
   int left;              /* the rank of the process to the left */
   int right;             /* the rank of the process to the right */
@@ -476,9 +475,7 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
   (*ranks) = (map_rank *)malloc(sizeof(map_rank) * size);
 
   if (ny % size == 0) {
-    int i = 0;
-    #pragma omp declare simd linear(i:1)
-    for (i = 0; i < size; i++) {
+    for (int i = 0; i < size; i++) {
       (*ranks)[i].start_col = i * work;
       (*ranks)[i].end_col = (i * work) + work;
     }
@@ -767,7 +764,7 @@ float av_velocity(const t_param params, t_speed* restrict cells, int* restrict o
 
 
 int initialise(const char* restrict paramfile, const char* restrict obstaclefile,
-               t_param* restrict params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
+               t_param* restrict params, t_speed* restrict cells_ptr, t_speed* restrict tmp_cells_ptr,
                int** restrict obstacles_ptr, float** restrict av_vels_ptr)
 {
   char message[1024]; /* message buffer */
@@ -844,7 +841,7 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
   */
 
   /* main grid */
-  *cells_ptr = (t_speed *)malloc(sizeof(t_speed));
+  *cells_ptr = (t_speed)malloc(sizeof(t_speed) * 1);
   (*cells_ptr)->speed_0 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*cells_ptr)->speed_1 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*cells_ptr)->speed_2 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
@@ -870,7 +867,7 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
     die("cannot allocate memory for a speed in cells", __LINE__, __FILE__);
 
   /* 'helper' grid, used as scratch space */
-  *tmp_cells_ptr = (t_speed *)malloc(sizeof(t_speed));
+  *tmp_cells_ptr = (t_speed)malloc(sizeof(t_speed) * 1);
   (*tmp_cells_ptr)->speed_0 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*tmp_cells_ptr)->speed_1 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
   (*tmp_cells_ptr)->speed_2 = (float *)_mm_malloc(sizeof(float) * (params->ny * params->nx), 64);
@@ -975,7 +972,7 @@ int initialise(const char* restrict paramfile, const char* restrict obstaclefile
   return EXIT_SUCCESS;
 }
 
-int finalise(const t_param* restrict params, t_speed** restrict cells_ptr, t_speed** restrict tmp_cells_ptr,
+int finalise(const t_param* restrict params, t_speed* restrict cells_ptr, t_speed* restrict tmp_cells_ptr,
              int** restrict obstacles_ptr, float** restrict av_vels_ptr)
 {
   /*
