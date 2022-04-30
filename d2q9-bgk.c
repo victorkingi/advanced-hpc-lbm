@@ -476,11 +476,13 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
   (*ranks) = (map_rank *)malloc(sizeof(map_rank) * size);
 
   if (ny % size == 0) {
+    #pragma omp simd
     for (int i = 0; i < size; i++) {
       (*ranks)[i].start_col = i * work;
       (*ranks)[i].end_col = (i * work) + work;
     }
   } else {
+    #pragma omp simd
     for (int i = 0; i < size; i++) {
       (*ranks)[i].start_col = i * work;
       (*ranks)[i].end_col = (i * work) + work;
@@ -488,12 +490,14 @@ void calc_all_rank_sizes(int size, int ny, map_rank** restrict ranks)
     }
     // spread remaining work across all ranks
     while (allocated < ny) {
+      #pragma omp simd
       for (int i = 0; i < size; i++) {
         if (!(allocated < ny)) break;
         (*ranks)[i].end_col += 1;
         allocated += 1;
 
         // update new end columns for next ranks
+        #pragma omp simd
         for (int k = i+1; k < size; k++) {
           (*ranks)[k].start_col = (*ranks)[k-1].end_col;
           (*ranks)[k].end_col += 1;
