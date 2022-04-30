@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #SBATCH --job-name d2q9-bgk
-#SBATCH --nodes 2
+#SBATCH --nodes 4
 #SBATCH --ntasks-per-node 28
 #SBATCH --time 00:10:00
 #SBATCH --partition veryshort
 #SBATCH --reservation=COSC026662
 #SBATCH --account=COSC026662
-#SBATCH --output d2q9-bgk-2-28.out
+#SBATCH --output d2q9-bgk-4-28.out
 
 echo Running on host `hostname`
 echo Time is `date`
@@ -18,6 +18,6 @@ echo `echo $SLURM_JOB_NODELIST | uniq`
 
 #! Run the executable
 mpirun -ppn 28 ./d2q9-bgk input_128x128.params obstacles_128x128.dat
-#./d2q9-bgk input_128x256.params obstacles_128x256.dat
-#./d2q9-bgk input_256x256.params obstacles_256x256.dat
-#./d2q9-bgk input_1024x1024.params obstacles_1024x1024.dat
+# mpirun -ppn 28 ./d2q9-bgk input_128x256.params obstacles_128x256.dat
+mpirun -ppn 28 ./d2q9-bgk input_256x256.params obstacles_256x256.dat
+mpirun -ppn 28 ./d2q9-bgk input_1024x1024.params obstacles_1024x1024.dat
