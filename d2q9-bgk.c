@@ -444,6 +444,7 @@ int main(int argc, char *argv[])
     write_values(params, cells, obstacles, av_vels);
 
   } else {
+    #pragma omp simd collapse(2)
     for (int col = start_col; col < end_col; col++) {
       for (ii=0; ii < local_nrows; ii++) {
         collate_buf[0 + (ii*9)] = cells->speed_0[ii + col * params.nx];
