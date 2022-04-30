@@ -444,7 +444,6 @@ int main(int argc, char *argv[])
     write_values(params, cells, obstacles, av_vels);
 
   } else {
-    #pragma omp simd
     for (int col = start_col; col < end_col; col++) {
       #pragma omp simd
       for (ii=0; ii < local_nrows; ii++) {
