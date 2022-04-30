@@ -164,8 +164,6 @@ int main(int argc, char *argv[])
   int strlen_;                                                                       /* length of a character array */
   enum bool {FALSE,TRUE};                                                            /* enumerated type: false = 0, true = 1 */  
   char hostname[MPI_MAX_PROCESSOR_NAME];                                             /* character array to hold hostname running process */
-  float *sendbuf;                                                                    /* buffer to hold values to send */
-  float *recvbuf;                                                                    /* buffer to hold received values */                                                                /* buffer to hold values to collate */
   int ii;                                                    
 
 
@@ -240,7 +238,7 @@ int main(int argc, char *argv[])
       // send to the left, receive from right 
       if (rank == 0) {
         // left doesn't exist hence no sending
-        MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
+        MPI_Sendrecv(&sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
             recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
             MPI_COMM_WORLD, &status);
 
@@ -273,7 +271,7 @@ int main(int argc, char *argv[])
 
         }
         
-        MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
+        MPI_Sendrecv(&sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               MPI_COMM_WORLD, &status);
 
@@ -293,7 +291,7 @@ int main(int argc, char *argv[])
           sendbuf[8 + (ii*9)] = cells->speed_8[ii + start_col * params.nx];
         }
         
-        MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
+        MPI_Sendrecv(&sendbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               recvbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               MPI_COMM_WORLD, &status);
         
@@ -314,7 +312,7 @@ int main(int argc, char *argv[])
       // send to the right, receive from left 
       if (rank == size - 1) {
         // right doesn't exist hence no sending
-        MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
+        MPI_Sendrecv(&sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               recvbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               MPI_COMM_WORLD, &status);
         
@@ -346,7 +344,7 @@ int main(int argc, char *argv[])
           sendbuf[8 + (ii*9)] = cells->speed_8[ii + (end_col - 1) * params.nx];
         }
 
-        MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
+        MPI_Sendrecv(&sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               recvbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               MPI_COMM_WORLD, &status);
 
@@ -364,7 +362,7 @@ int main(int argc, char *argv[])
           sendbuf[8 + (ii*9)] = cells->speed_8[ii + (end_col - 1) * params.nx];
         }
 
-        MPI_Sendrecv(sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
+        MPI_Sendrecv(&sendbuf, local_nrows * 9, MPI_FLOAT, right, tag,
               recvbuf, local_nrows * 9, MPI_FLOAT, left, tag,
               MPI_COMM_WORLD, &status);
 
@@ -460,7 +458,7 @@ int main(int argc, char *argv[])
       }
       jj++;
     }
-    MPI_Send(collate_buf, max_ncols * local_nrows * 9, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+    MPI_Send(&collate_buf, max_ncols * local_nrows * 9, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
   }
 
   MPI_Finalize();
@@ -469,9 +467,6 @@ int main(int argc, char *argv[])
   free(ranks->start_col);
   free(ranks->end_col);
   free(ranks);
-  sendbuf = NULL;
-  recvbuf = NULL;
-  collate_buf = NULL;
   ranks = NULL;
 
   return EXIT_SUCCESS;
