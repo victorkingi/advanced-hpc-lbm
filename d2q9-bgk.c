@@ -488,10 +488,8 @@ int main(int argc, char *argv[])
   if (rank != 0) {
     finalise(&params, &cells, &tmp_cells, &obstacles, &av_vels);
     free(sendbuf);
-    free(collate_buf);
     free(ranks);
     sendbuf = NULL;
-    collate_buf = NULL;
     ranks = NULL;
   }
 
