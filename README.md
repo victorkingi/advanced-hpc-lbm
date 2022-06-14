@@ -1,4 +1,6 @@
-# HPC Coursework
+# Advanced High Performance Computing Coursework
+
+This coursework involves using OpenMP and MPI to convert a serial Lattice Boltzmann algorithm in C to a distributed memory parallel, vectorized(intel AVX2 optimized) code that is NUMA aware.
 
 Base coursework for the Advanced High Performance Computing class.
 
